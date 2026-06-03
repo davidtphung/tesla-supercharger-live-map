@@ -43,6 +43,12 @@ git commit -m "chore: track zsh and claude config"
 - Private keys, tokens, large workspaces, and personal data are excluded by design.
 - For more advanced dotfiles management, consider tools like [chezmoi](https://www.chezmoi.io/), [yadm](https://yadm.io/), or a bare-repo + worktree pattern.
 
+## GitHub
+
+**Repository**: https://github.com/davidtphung/dotfiles (private)
+
+Connected via GitHub CLI + Grok.
+
 ## Current branch
 
 `main`
