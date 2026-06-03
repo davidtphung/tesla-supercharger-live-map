@@ -25,19 +25,15 @@
 # === Common editor / dev tool configs (add more as needed) ===
 !/.editorconfig
 
-# === AI / Agent tool configs (review contents before committing - may contain keys) ===
+# === AI / Agent tool configs ===
+# Only track lightweight top-level config files (review for secrets before add -f).
+# Full tool directories (plugins, caches, large workspaces) are intentionally ignored.
 !/.claude.json
 !/.claude.json.backup
-!/.cursor
-!/.grok
-!/.agents
 
-# For directories above, we still want to ignore heavy subdirs inside them.
-# These will be re-ignored even if parent dir is whitelisted:
-.claude/plugins/**/node_modules
-.claude/cache/**
-.grok/cache/**
-.cursor/cache/**
+# If you want to track specific files inside these dirs later:
+#   git add -f .cursor/some-specific-file.json
+#   (Avoid adding entire .cursor/, .grok/, .agents/, .claude/ dirs)
 
 # === SSH (NEVER track private keys) ===
 !/.ssh/config
