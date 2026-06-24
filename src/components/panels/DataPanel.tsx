@@ -12,7 +12,6 @@ import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 
 export function DataPanel({
   stations,
-  networkStations,
   liveStats,
   liveEnergy,
   selectedStationId,
@@ -22,7 +21,6 @@ export function DataPanel({
   embedded = false,
 }: {
   stations: StationRecord[];
-  networkStations?: StationRecord[];
   liveStats: NetworkLiveStats;
   liveEnergy?: EnergyFlow;
   selectedStationId: string | null;
@@ -49,7 +47,7 @@ export function DataPanel({
         </p>
       </div>
 
-      <SuperchargeChartsPanel stations={networkStations ?? stations} embedded />
+      <SuperchargeChartsPanel embedded />
 
       <LiveStatsBar stats={liveStats} embedded />
 

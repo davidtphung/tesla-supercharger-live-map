@@ -2,52 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
-import type { StationRecord } from "@/lib/schema/station";
-import { aggregateChangesByYear } from "@/lib/providers/adapters/supercharge-charts";
+import {
+  aggregateChangesByYear,
+  type StatusBreakdownRow,
+  type StatusBucketCounts,
+} from "@/lib/providers/adapters/supercharge-charts";
 import { useSuperchargeCharts } from "@/lib/hooks/useSuperchargeCharts";
 import { SuperchargeLineChart } from "@/components/charts/SuperchargeLineChart";
 import { formatCount } from "@/lib/utils/format";
 
-function countByStatus(stations: StationRecord[]) {
-  const counts: Record<string, number> = {
-    OPEN: 0,
-    CONSTRUCTION: 0,
-    PLAN: 0,
-    PERMIT: 0,
-    CLOSED: 0,
-  };
-
-  for (const s of stations) {
-    const key =
-      s.station_status === "CLOSED"
-        ? "CLOSED"
-        : s.station_status === "PLAN"
-          ? "PLAN"
-          : s.station_status === "PERMIT"
-            ? "PERMIT"
-            : s.station_status === "CONSTRUCTION"
-              ? "CONSTRUCTION"
-              : s.station_status === "OPEN"
-                ? "OPEN"
-                : "OTHER";
-    counts[key] = (counts[key] ?? 0) + 1;
-  }
-
-  return counts;
-}
-
 export function SuperchargeChartsPanel({
-  stations,
   embedded = false,
 }: {
-  stations: StationRecord[];
   embedded?: boolean;
 }) {
   const { data, loading, error } = useSuperchargeCharts(60_000);
   const [stallIndex, setStallIndex] = useState(-1);
 
-  const statusCounts = useMemo(() => countByStatus(stations), [stations]);
-  const openSites = statusCounts.OPEN ?? 0;
+  const worldRow = data?.statusBreakdown?.find((row) => row.label === "World");
 
   const stallPoints = useMemo(
     () =>
@@ -109,16 +81,37 @@ export function SuperchargeChartsPanel({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Open stalls" value={formatCount(latestStalls)} color="var(--success)" />
-        <Stat label="Open sites" value={formatCount(openSites)} color="var(--accent)" />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <Stat
+          label="Open stalls"
+          value={formatCount(latestStalls)}
+          color="var(--success)"
+        />
+        <Stat
+          label="Open sites"
+          value={formatCount(worldRow?.open.sites ?? 0)}
+          color="var(--success)"
+        />
         <Stat
           label="Construction"
-          value={formatCount(statusCounts.CONSTRUCTION ?? 0)}
+          value={formatCount(worldRow?.construction.sites ?? 0)}
           color="var(--warning)"
         />
-        <Stat label="Planned" value={formatCount(statusCounts.PLAN ?? 0)} color="var(--text-secondary)" />
+        <Stat
+          label="Planned"
+          value={formatCount(worldRow?.plan.sites ?? 0)}
+          color="var(--accent)"
+        />
+        <Stat
+          label="Closed"
+          value={formatCount(worldRow?.closed.sites ?? 0)}
+          color="var(--text-secondary)"
+        />
       </div>
+
+      {data?.statusBreakdown && data.statusBreakdown.length > 0 && (
+        <StatusBreakdownTable rows={data.statusBreakdown} />
+      )}
 
       {error && (
         <p className="text-[13px]" style={{ color: "var(--danger)" }}>
@@ -234,5 +227,85 @@ function Legend({ color, label }: { color: string; label: string }) {
       <span className="h-2 w-2 rounded-full" style={{ background: color }} aria-hidden="true" />
       {label}
     </span>
+  );
+}
+
+function StatusBreakdownTable({ rows }: { rows: StatusBreakdownRow[] }) {
+  return (
+    <div>
+      <h4 className="section-label">Sites by status</h4>
+      <div
+        className="overflow-x-auto rounded-lg"
+        style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}
+      >
+        <table className="w-full min-w-[320px] text-left text-[11px]">
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <th className="px-3 py-2 font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-muted)" }}>
+                Region
+              </th>
+              <StatusHeader label="Open" color="var(--success)" />
+              <StatusHeader label="Constr" color="var(--warning)" />
+              <StatusHeader label="Plan" color="var(--accent)" />
+              <StatusHeader label="Closed" color="var(--text-secondary)" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.label}
+                style={{
+                  borderBottom: "1px solid var(--border)",
+                  fontWeight: row.label === "World" ? 600 : 400,
+                }}
+              >
+                <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
+                  {row.label}
+                </td>
+                <StatusCell counts={row.open} color="var(--success)" />
+                <StatusCell counts={row.construction} color="var(--warning)" />
+                <StatusCell counts={row.plan} color="var(--accent)" />
+                <StatusCell counts={row.closed} color="var(--text-secondary)" />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[10px]" style={{ color: "var(--text-faint)" }}>
+        Site counts from supercharge.info. Open includes expanding; Constr includes permit; Plan includes voting; Closed includes temp and permanent closures.
+      </p>
+    </div>
+  );
+}
+
+function StatusHeader({ label, color }: { label: string; color: string }) {
+  return (
+    <th
+      className="px-3 py-2 text-right font-semibold uppercase tracking-[0.08em]"
+      style={{ color }}
+    >
+      {label}
+    </th>
+  );
+}
+
+function StatusCell({
+  counts,
+  color,
+}: {
+  counts: StatusBucketCounts;
+  color: string;
+}) {
+  return (
+    <td className="px-3 py-2 text-right tabular-nums">
+      <div className="font-mono font-semibold" style={{ color }}>
+        {formatCount(counts.sites)}
+      </div>
+      {counts.stalls > 0 && (
+        <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+          {formatCount(counts.stalls)} stalls
+        </div>
+      )}
+    </td>
   );
 }
