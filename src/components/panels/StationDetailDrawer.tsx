@@ -74,7 +74,7 @@ export function StationDetailDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="panel pointer-events-auto absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] max-h-[min(78dvh,720px)] scroll-thin overflow-y-auto p-5 shadow-2xl"
+      className="glass pointer-events-auto absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] max-h-[min(78dvh,720px)] scroll-thin overflow-y-auto rounded-xl p-5"
       style={{
         top: "auto",
         paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -84,7 +84,7 @@ export function StationDetailDrawer({
       <div className="mb-4 flex items-start justify-between gap-3">
         <h2
           id={titleId}
-          className="font-display text-lg font-semibold leading-tight text-slate-100"
+          className="text-lg font-semibold leading-tight gradient-text"
         >
           {station.station_name}
         </h2>

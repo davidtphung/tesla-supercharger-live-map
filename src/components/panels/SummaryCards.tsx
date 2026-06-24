@@ -14,19 +14,22 @@ function MiniList({
   icon,
   stations,
   metric,
+  accent,
 }: {
   title: string;
   icon: React.ReactNode;
   stations: StationRecord[];
   metric: (s: StationRecord) => string;
+  accent: string;
 }) {
   const setSelected = useFilterStore((s) => s.setSelectedStationId);
 
   return (
-    <section className="panel p-4" aria-labelledby={`list-${title.replace(/\s/g, "-")}`}>
+    <section className="card stat-glow p-4" aria-labelledby={`list-${title.replace(/\s/g, "-")}`}>
       <h3
         id={`list-${title.replace(/\s/g, "-")}`}
-        className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400"
+        className="section-label mb-3 flex items-center gap-2 !normal-case"
+        style={{ color: accent }}
       >
         {icon}
         {title}
@@ -37,10 +40,13 @@ function MiniList({
             <button
               type="button"
               onClick={() => setSelected(s.station_id)}
-              className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-[15px] transition hover:bg-slate-800/80 focus-visible:bg-slate-800/80"
+              className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-[13px] transition"
+              style={{ color: "var(--text)" }}
             >
-              <span className="truncate text-slate-200">{s.station_name}</span>
-              <span className="shrink-0 tabular-nums text-slate-500">{metric(s)}</span>
+              <span className="truncate">{s.station_name}</span>
+              <span className="shrink-0 font-mono tabular-nums" style={{ color: "var(--text-muted)" }}>
+                {metric(s)}
+              </span>
             </button>
           </li>
         ))}
@@ -54,19 +60,22 @@ export function SummaryCards({ stations }: { stations: StationRecord[] }) {
     <div className="grid gap-3" role="region" aria-label="Station insights">
       <MiniList
         title="Busiest now"
-        icon={<Activity className="h-4 w-4 text-amber-400" aria-hidden="true" />}
+        accent="var(--warning)"
+        icon={<Activity className="h-3.5 w-3.5" aria-hidden="true" />}
         stations={topBusiest(stations)}
         metric={(s) => `${s.congestion_score}%`}
       />
       <MiniList
         title="Highest power"
-        icon={<BatteryCharging className="h-4 w-4 text-sky-400" aria-hidden="true" />}
+        accent="var(--accent)"
+        icon={<BatteryCharging className="h-3.5 w-3.5" aria-hidden="true" />}
         stations={topPower(stations)}
         metric={(s) => `${s.max_power_kw} kW`}
       />
       <MiniList
         title="Most resilient"
-        icon={<Shield className="h-4 w-4 text-emerald-400" aria-hidden="true" />}
+        accent="var(--success)"
+        icon={<Shield className="h-3.5 w-3.5" aria-hidden="true" />}
         stations={topResilient(stations)}
         metric={(s) => `${s.reliability_score}`}
       />

@@ -30,12 +30,11 @@ export function RefreshIndicator({
         label={label}
         onClick={onRefresh}
         aria-busy={loading}
-        variant="default"
       >
         {loading ? (
-          <Loader2 className="h-5 w-5 animate-spin text-sky-400" aria-hidden="true" />
+          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--accent)" }} aria-hidden="true" />
         ) : (
-          <Radio className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+          <Radio className="h-5 w-5" style={{ color: "var(--success)" }} aria-hidden="true" />
         )}
       </IconButton>
     );
@@ -47,19 +46,20 @@ export function RefreshIndicator({
       onClick={onRefresh}
       aria-busy={loading}
       aria-label={label}
-      className="panel flex min-h-[44px] max-w-[min(360px,42vw)] items-center gap-2 px-3 py-2 text-left text-[13px] text-slate-300 transition hover:border-sky-500/40 md:text-xs"
+      className="glass flex min-h-[44px] max-w-[min(360px,42vw)] items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px]"
+      style={{ color: "var(--text-secondary)" }}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-sky-400" aria-hidden="true" />
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "var(--accent)" }} aria-hidden="true" />
       ) : (
-        <Radio className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+        <Radio className="h-4 w-4 shrink-0" style={{ color: "var(--success)" }} aria-hidden="true" />
       )}
-      <span className="truncate">
+      <span className="truncate font-mono">
         <span aria-live="polite">
           {fetchedAt ? `Updated ${formatRelativeTime(fetchedAt)}` : "Loading…"}
         </span>
         {source && (
-          <span className="hidden text-slate-500 sm:inline">
+          <span className="hidden sm:inline" style={{ color: "var(--text-faint)" }}>
             {" "}
             · {source}
             {confidence ? ` (${confidence})` : ""}

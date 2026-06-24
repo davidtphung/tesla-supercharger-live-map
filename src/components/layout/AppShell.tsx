@@ -44,7 +44,7 @@ export function AppShell() {
     : "";
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#0a0e17]">
+    <div className="relative h-[100dvh] w-full overflow-hidden" style={{ background: "var(--bg)" }}>
       <main
         id="main-map"
         className="absolute inset-0 pb-[calc(68px+var(--safe-bottom))] md:pb-0"
@@ -142,13 +142,24 @@ export function AppShell() {
       {error && (
         <div
           role="alert"
-          className="pointer-events-auto absolute bottom-[calc(76px+var(--safe-bottom))] left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded-xl border border-red-500/40 bg-red-950/90 px-4 py-3 text-[15px] text-red-100 md:bottom-4"
+          className="pointer-events-auto absolute bottom-[calc(76px+var(--safe-bottom))] left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded-xl border px-4 py-3 text-[13px] md:bottom-4"
+          style={{
+            borderColor: "color-mix(in srgb, var(--danger) 40%, transparent)",
+            background: "color-mix(in srgb, var(--danger) 15%, var(--glass-bg))",
+            color: "var(--danger)",
+          }}
         >
           {error}
         </div>
       )}
 
-      <footer className="pointer-events-none absolute inset-x-0 bottom-[calc(68px+var(--safe-bottom))] z-10 hidden bg-gradient-to-t from-[#0a0e17] to-transparent px-4 pb-2 pt-6 text-center text-[11px] text-slate-500 md:block md:bottom-0">
+      <footer
+        className="pointer-events-none absolute inset-x-0 bottom-[calc(68px+var(--safe-bottom))] z-10 hidden px-4 pb-2 pt-6 text-center text-[10px] tracking-[0.08em] md:block md:bottom-0"
+        style={{
+          color: "var(--text-faint)",
+          background: "linear-gradient(to top, var(--bg), transparent)",
+        }}
+      >
         Metadata from{" "}
         <a
           className="pointer-events-auto underline underline-offset-2"

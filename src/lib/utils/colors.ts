@@ -1,20 +1,21 @@
 import type { EnergyPortfolioType, OccupancyStatus } from "@/lib/schema/station";
+import { SPACEX } from "@/lib/theme/tokens";
 
 export const OCCUPANCY_COLORS: Record<OccupancyStatus, string> = {
-  available: "#22c55e",
-  busy: "#f59e0b",
-  full: "#ef4444",
+  available: SPACEX.success,
+  busy: SPACEX.warning,
+  full: SPACEX.danger,
   down: "#6b7280",
-  closed: "#374151",
-  unknown: "#94a3b8",
+  closed: "#4b5563",
+  unknown: SPACEX.accent,
 };
 
 export const ENERGY_COLORS: Record<EnergyPortfolioType, string> = {
-  solar: "#fbbf24",
-  battery: "#38bdf8",
-  grid: "#a78bfa",
-  hybrid: "#34d399",
-  unknown: "#64748b",
+  solar: SPACEX.gold,
+  battery: SPACEX.cyan,
+  grid: SPACEX.blue,
+  hybrid: "#00c853",
+  unknown: "#6b7280",
 };
 
 export function markerColor(
@@ -26,8 +27,8 @@ export function markerColor(
 }
 
 export function congestionHeatColor(score: number): string {
-  if (score >= 80) return "rgba(239, 68, 68, 0.65)";
-  if (score >= 60) return "rgba(245, 158, 11, 0.55)";
-  if (score >= 40) return "rgba(250, 204, 21, 0.45)";
-  return "rgba(34, 197, 94, 0.35)";
+  if (score >= 80) return "rgba(244, 67, 54, 0.6)";
+  if (score >= 60) return "rgba(255, 152, 0, 0.5)";
+  if (score >= 40) return "rgba(245, 166, 35, 0.4)";
+  return "rgba(0, 200, 83, 0.32)";
 }

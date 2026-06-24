@@ -42,18 +42,16 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
 
   if (!stationId) {
     return (
-      <div className="panel p-4 text-[15px] text-slate-500">
+      <div className="card p-4 text-[13px]" style={{ color: "var(--text-muted)" }}>
         Select a station to replay occupancy changes.
       </div>
     );
   }
 
   return (
-    <section className="panel space-y-3 p-4" aria-label="Occupancy timeline">
+    <section className="card p-4" aria-label="Occupancy timeline">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-slate-400">
-          Timeline playback
-        </h3>
+        <h3 className="section-label !mb-0">Timeline playback</h3>
         <IconButton
           label={playing ? "Pause timeline" : "Play timeline"}
           onClick={() => setPlaying((p) => !p)}
@@ -69,22 +67,24 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
 
       {current ? (
         <>
-          <p className="text-[15px] text-slate-300" aria-live="polite">
+          <p className="mt-3 font-mono text-[12px]" style={{ color: "var(--text-secondary)" }} aria-live="polite">
             {formatTimestamp(current.timestamp)} · {current.occupancy_status}
           </p>
           <div
-            className="flex h-20 items-end gap-1"
+            className="mt-3 flex h-20 items-end gap-1"
             role="img"
             aria-label={`Occupancy chart, ${current.stall_occupied} stalls occupied`}
           >
             {snapshots.map((s, i) => (
               <div
                 key={s.timestamp}
-                className="flex-1 rounded-t bg-sky-500/30 transition-colors"
+                className="flex-1 rounded-t transition-colors"
                 style={{
                   height: `${(s.stall_occupied / maxOccupied) * 100}%`,
                   backgroundColor:
-                    i === index ? "rgba(56,189,248,0.85)" : undefined,
+                    i === index
+                      ? "var(--accent)"
+                      : "color-mix(in srgb, var(--accent-strong) 28%, transparent)",
                 }}
                 title={`${s.stall_occupied} occupied`}
               />
@@ -96,36 +96,42 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
             max={Math.max(0, snapshots.length - 1)}
             value={index}
             onChange={(e) => setIndex(Number(e.target.value))}
-            className="h-11 w-full accent-sky-500"
+            className="mt-3 h-11 w-full"
+            style={{ accentColor: "var(--accent-strong)" }}
             aria-label="Scrub timeline"
-            aria-valuemin={0}
-            aria-valuemax={Math.max(0, snapshots.length - 1)}
-            aria-valuenow={index}
           />
-          <div className="grid grid-cols-3 gap-2 text-center text-[15px]">
-            <div>
-              <div className="text-xl font-semibold tabular-nums text-emerald-400">
-                {current.stall_available}
-              </div>
-              <div className="text-[13px] text-slate-500">Available</div>
-            </div>
-            <div>
-              <div className="text-xl font-semibold tabular-nums text-amber-400">
-                {current.stall_occupied}
-              </div>
-              <div className="text-[13px] text-slate-500">Occupied</div>
-            </div>
-            <div>
-              <div className="text-xl font-semibold tabular-nums text-slate-300">
-                {current.stall_down}
-              </div>
-              <div className="text-[13px] text-slate-500">Down</div>
-            </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <Metric label="Available" value={current.stall_available} color="var(--success)" />
+            <Metric label="Occupied" value={current.stall_occupied} color="var(--warning)" />
+            <Metric label="Down" value={current.stall_down} color="var(--text-secondary)" />
           </div>
         </>
       ) : (
-        <p className="text-[15px] text-slate-500">Loading timeline…</p>
+        <p className="mt-3 text-[13px]" style={{ color: "var(--text-muted)" }}>
+          Loading timeline…
+        </p>
       )}
     </section>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-xl font-semibold tabular-nums" style={{ color }}>
+        {value}
+      </div>
+      <div className="text-[11px] tracking-wide" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </div>
+    </div>
   );
 }

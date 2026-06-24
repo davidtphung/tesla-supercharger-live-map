@@ -51,26 +51,26 @@ export function FilterPanel({
       className={
         embedded
           ? "space-y-5"
-          : "panel scroll-thin max-h-[min(72dvh,640px)] space-y-5 overflow-y-auto p-4 md:max-h-[calc(100dvh-10rem)]"
+          : "glass scroll-thin max-h-[min(72dvh,640px)] space-y-5 overflow-y-auto rounded-xl p-4 md:max-h-[calc(100dvh-10rem)]"
       }
       role="search"
       aria-label="Station filters"
     >
       <div>
-        <label htmlFor="station-search" className="field-label">
+        <label htmlFor="station-search" className="section-label">
           Search
         </label>
         <SearchBar id="station-search" />
       </div>
 
       {activeCount > 0 && (
-        <p className="text-[13px] text-slate-500" aria-live="polite">
+        <p className="font-mono text-[11px] tracking-wide" style={{ color: "var(--text-faint)" }} aria-live="polite">
           {activeCount} filter{activeCount === 1 ? "" : "s"} active
         </p>
       )}
 
       <fieldset className="border-0 p-0">
-        <legend className="field-label">Occupancy</legend>
+        <legend className="section-label">Occupancy</legend>
         <div className="flex flex-wrap gap-2" role="group">
           {OCCUPANCY_OPTIONS.map((status) => (
             <FilterChip
@@ -84,7 +84,7 @@ export function FilterPanel({
       </fieldset>
 
       <fieldset className="border-0 p-0">
-        <legend className="field-label">Energy portfolio</legend>
+        <legend className="section-label">Energy portfolio</legend>
         <div className="flex flex-wrap gap-2" role="group">
           {ENERGY_OPTIONS.map((type) => (
             <FilterChip
@@ -107,7 +107,7 @@ export function FilterPanel({
       </fieldset>
 
       <fieldset className="border-0 p-0">
-        <legend className="field-label">Region</legend>
+        <legend className="section-label">Region</legend>
         <div className="flex flex-wrap gap-2" role="group">
           {regionOptions.map((region) => (
             <FilterChip
@@ -122,7 +122,7 @@ export function FilterPanel({
       </fieldset>
 
       <fieldset className="border-0 p-0">
-        <legend className="field-label" id="power-range-label">
+        <legend className="section-label" id="power-range-label">
           Minimum power
         </legend>
         <input
@@ -132,24 +132,20 @@ export function FilterPanel({
           step={25}
           value={filters.minPowerKw}
           onChange={(e) => filters.setMinPowerKw(Number(e.target.value))}
-          className="h-11 w-full accent-sky-500"
+          className="h-11 w-full"
+          style={{ accentColor: "var(--accent-strong)" }}
           aria-labelledby="power-range-label"
           aria-valuemin={0}
           aria-valuemax={350}
           aria-valuenow={filters.minPowerKw}
-          aria-valuetext={
-            filters.minPowerKw === 0
-              ? "Any power level"
-              : `At least ${filters.minPowerKw} kilowatts`
-          }
         />
-        <div className="mt-2 text-[15px] text-slate-400">
+        <div className="mt-2 font-mono text-[12px]" style={{ color: "var(--text-muted)" }}>
           {filters.minPowerKw === 0 ? "Any" : `≥ ${filters.minPowerKw} kW`}
         </div>
       </fieldset>
 
       <fieldset className="space-y-1 border-0 p-0">
-        <legend className="field-label">Map layers</legend>
+        <legend className="section-label">Map layers</legend>
         <label className="field-check">
           <input
             type="checkbox"
@@ -171,7 +167,12 @@ export function FilterPanel({
       <button
         type="button"
         onClick={() => filters.reset()}
-        className="w-full min-h-[44px] rounded-xl border border-slate-600 py-3 text-[15px] font-medium text-slate-300 transition hover:border-slate-500 hover:bg-slate-800/50"
+        className="w-full min-h-[44px] rounded-xl border py-3 text-[13px] font-medium transition hover:opacity-90"
+        style={{
+          borderColor: "var(--border-strong)",
+          color: "var(--text-secondary)",
+          background: "var(--bg-card)",
+        }}
       >
         Reset filters
       </button>

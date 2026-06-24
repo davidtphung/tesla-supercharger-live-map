@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map, type Popup } from "maplibre-gl";
 import type { StationRecord } from "@/lib/schema/station";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
+import { MAP_STYLES } from "@/lib/theme/tokens";
+import { useThemeStore } from "@/store/theme";
 import { markerColor, congestionHeatColor } from "@/lib/utils/colors";
-
-const MAP_STYLE =
-  process.env.NEXT_PUBLIC_MAP_STYLE ??
-  "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 
 function stationsToGeoJSON(
   stations: StationRecord[],
@@ -36,8 +34,6 @@ function stationsToGeoJSON(
         total: s.stall_total,
         congestion: s.congestion_score,
         power: s.max_power_kw,
-        status: s.occupancy_status,
-        energy: s.energy_portfolio_type,
         heat: congestionHeatColor(s.congestion_score),
         radius: 4 + Math.min(14, s.congestion_score / 8),
       },
@@ -62,25 +58,10 @@ export function SuperchargerMap({
   const mapRef = useRef<Map | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const reducedMotion = usePrefersReducedMotion();
+  const resolved = useThemeStore((s) => s.resolved);
 
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: MAP_STYLE,
-      center: [-98.5795, 39.8283],
-      zoom: 3.2,
-      attributionControl: {},
-      cooperativeGestures: true,
-    });
-
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "bottom-right"
-    );
-
-    map.on("load", () => {
+  const addStationLayers = useCallback(
+    (map: Map, theme: "dark" | "light") => {
       map.addSource("stations", {
         type: "geojson",
         data: stationsToGeoJSON([], emphasizeEnergy),
@@ -96,7 +77,7 @@ export function SuperchargerMap({
           "circle-opacity": 0.55,
           "circle-blur": 0.8,
         },
-        layout: { visibility: "none" },
+        layout: { visibility: showHeatmap ? "visible" : "none" },
       });
 
       map.addLayer({
@@ -106,9 +87,10 @@ export function SuperchargerMap({
         paint: {
           "circle-radius": 12,
           "circle-color": ["get", "color"],
-          "circle-opacity": 0.18,
+          "circle-opacity": 0.2,
           "circle-blur": 0.6,
         },
+        layout: { visibility: showHeatmap ? "none" : "visible" },
       });
 
       map.addLayer({
@@ -128,30 +110,39 @@ export function SuperchargerMap({
             10,
           ],
           "circle-color": ["get", "color"],
-          "circle-stroke-color": "#0f172a",
+          "circle-stroke-color": theme === "dark" ? "#0a1117" : "#ffffff",
           "circle-stroke-width": 1.5,
           "circle-opacity": 0.95,
         },
+        layout: { visibility: showHeatmap ? "none" : "visible" },
       });
+    },
+    [emphasizeEnergy, showHeatmap]
+  );
 
-      const selectStation = (id: string, lngLat: maplibregl.LngLat, props: Record<string, unknown>) => {
-        onSelectStation(id);
-        if (popupRef.current) popupRef.current.remove();
-        popupRef.current = new maplibregl.Popup({
-          closeButton: true,
-          closeOnClick: false,
-          offset: 14,
-          className: "station-popup",
-        })
-          .setLngLat(lngLat)
-          .setHTML(
-            `<div role="status">
-              <strong>${props.name}</strong><br/>
-              <span style="color:#cbd5e1">${props.available}/${props.total} available · ${props.power} kW</span>
-            </div>`
-          )
-          .addTo(map);
-      };
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    popupRef.current?.remove();
+    mapRef.current?.remove();
+    mapRef.current = null;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLES[resolved],
+      center: [-98.5795, 39.8283],
+      zoom: 3.2,
+      attributionControl: {},
+      cooperativeGestures: true,
+    });
+
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "bottom-right"
+    );
+
+    map.on("load", () => {
+      addStationLayers(map, resolved);
 
       map.on("click", "stations-points", (e) => {
         const feature = e.features?.[0];
@@ -159,7 +150,22 @@ export function SuperchargerMap({
         const props = feature.properties;
         const id = props.station_id as string | undefined;
         if (!id) return;
-        selectStation(id, e.lngLat, props);
+        onSelectStation(id);
+
+        popupRef.current?.remove();
+        popupRef.current = new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: false,
+          offset: 14,
+        })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div role="status">
+              <strong style="font-weight:600">${props.name}</strong><br/>
+              <span style="font-family:monospace;font-size:12px;opacity:0.7">${props.available}/${props.total} available · ${props.power} kW</span>
+            </div>`
+          )
+          .addTo(map);
       });
 
       map.on("mouseenter", "stations-points", () => {
@@ -176,7 +182,7 @@ export function SuperchargerMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [emphasizeEnergy, onSelectStation]);
+  }, [resolved, addStationLayers, onSelectStation]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -228,7 +234,7 @@ export function SuperchargerMap({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 h-full w-full"
+      className="absolute inset-0 h-full w-full globe-canvas"
       role="application"
       aria-label="Interactive map of Tesla Supercharger stations. Tap or click a marker for details."
       tabIndex={0}
