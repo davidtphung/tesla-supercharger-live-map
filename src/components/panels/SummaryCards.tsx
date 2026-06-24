@@ -1,12 +1,15 @@
 "use client";
 
-import { Activity, BatteryCharging, Shield } from "lucide-react";
+import { Activity, BatteryCharging, CircleCheck, Shield, Zap } from "lucide-react";
 import type { StationRecord } from "@/lib/schema/station";
 import {
+  topAvailable,
   topBusiest,
+  topChargingNow,
   topPower,
   topResilient,
 } from "@/lib/filter-stations";
+import { formatPower } from "@/lib/utils/format";
 import { useFilterStore } from "@/store/filters";
 
 function MiniList({
@@ -23,6 +26,8 @@ function MiniList({
   accent: string;
 }) {
   const setSelected = useFilterStore((s) => s.setSelectedStationId);
+
+  if (stations.length === 0) return null;
 
   return (
     <section className="card stat-glow p-4" aria-labelledby={`list-${title.replace(/\s/g, "-")}`}>
@@ -59,18 +64,32 @@ export function SummaryCards({ stations }: { stations: StationRecord[] }) {
   return (
     <div className="grid gap-3" role="region" aria-label="Station insights">
       <MiniList
+        title="Most stalls available"
+        accent="var(--success)"
+        icon={<CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />}
+        stations={topAvailable(stations)}
+        metric={(s) => `${s.stall_available}/${s.stall_total}`}
+      />
+      <MiniList
+        title="Highest charging draw"
+        accent="var(--accent-cyan)"
+        icon={<Zap className="h-3.5 w-3.5" aria-hidden="true" />}
+        stations={topChargingNow(stations)}
+        metric={(s) => formatPower(s.current_power_kw)}
+      />
+      <MiniList
         title="Busiest now"
         accent="var(--warning)"
         icon={<Activity className="h-3.5 w-3.5" aria-hidden="true" />}
         stations={topBusiest(stations)}
-        metric={(s) => `${s.congestion_score}%`}
+        metric={(s) => `${s.stall_occupied} occ · ${s.congestion_score}%`}
       />
       <MiniList
         title="Highest power"
         accent="var(--accent)"
         icon={<BatteryCharging className="h-3.5 w-3.5" aria-hidden="true" />}
         stations={topPower(stations)}
-        metric={(s) => `${s.max_power_kw} kW`}
+        metric={(s) => `${s.max_power_kw} kW max`}
       />
       <MiniList
         title="Most resilient"

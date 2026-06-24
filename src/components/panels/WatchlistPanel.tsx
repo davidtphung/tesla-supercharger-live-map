@@ -51,7 +51,7 @@ export function WatchlistPanel({
                   {s.station_name}
                 </div>
                 <div className="font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  {s.stall_available}/{s.stall_total} available · {s.occupancy_status}
+                  {s.stall_available} avail · {s.stall_occupied} occ · {s.current_power_kw} kW
                 </div>
               </button>
               <IconButton

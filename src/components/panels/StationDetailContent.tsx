@@ -7,14 +7,40 @@ import {
   EnergyChip,
   OccupancyChip,
 } from "@/components/ui/StatusChip";
-import { formatPower, formatRelativeTime, formatTimestamp } from "@/lib/utils/format";
+import { formatCount, formatPower, formatRelativeTime, formatTimestamp } from "@/lib/utils/format";
 
 export function StationDetailContent({ station }: { station: StationRecord }) {
+  const operational = Math.max(station.stall_total - station.stall_down, 1);
+  const utilization = Math.round((station.stall_occupied / operational) * 100);
+
   return (
     <>
       <p className="mb-4 text-[13px]" style={{ color: "var(--text-muted)" }}>
         {[station.city, station.state, station.country].filter(Boolean).join(", ")}
       </p>
+
+      <div
+        className="mb-4 rounded-xl p-4"
+        style={{
+          background: "color-mix(in srgb, var(--accent-cyan) 12%, transparent)",
+          border: "1px solid var(--border)",
+        }}
+        role="status"
+        aria-label={`${formatPower(station.current_power_kw)} charging across ${station.stall_occupied} occupied stalls`}
+      >
+        <div className="section-label mb-1" style={{ color: "var(--accent-cyan)" }}>
+          Charging now
+        </div>
+        <div
+          className="font-mono text-2xl font-bold tabular-nums"
+          style={{ color: "var(--accent-cyan)" }}
+        >
+          {formatPower(station.current_power_kw)}
+        </div>
+        <p className="mt-1 text-[12px]" style={{ color: "var(--text-muted)" }}>
+          {formatCount(station.stall_occupied)} stalls in use · {utilization}% utilization
+        </p>
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-2" role="list" aria-label="Station status">
         <OccupancyChip status={station.occupancy_status} />
@@ -22,6 +48,43 @@ export function StationDetailContent({ station }: { station: StationRecord }) {
         <BoolChip label="Solar" active={station.solar_present} color="var(--gold)" />
         <BoolChip label="Battery" active={station.battery_present} color="var(--accent-cyan)" />
         <BoolChip label="Hybrid" active={station.hybrid} color="var(--success)" />
+      </div>
+
+      <div className="mb-3">
+        <div className="mb-1.5 flex justify-between text-[11px]" style={{ color: "var(--text-muted)" }}>
+          <span>Stall utilization</span>
+          <span className="font-mono tabular-nums">{utilization}%</span>
+        </div>
+        <div
+          className="h-2 overflow-hidden rounded-full"
+          style={{ background: "var(--bg-card)" }}
+          role="progressbar"
+          aria-valuenow={utilization}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Stall utilization"
+        >
+          <div className="flex h-full">
+            <div
+              className="h-full"
+              style={{
+                width: `${(station.stall_occupied / operational) * 100}%`,
+                background: "var(--warning)",
+              }}
+            />
+            <div
+              className="h-full"
+              style={{
+                width: `${(station.stall_available / operational) * 100}%`,
+                background: "var(--success)",
+              }}
+            />
+          </div>
+        </div>
+        <div className="mt-1.5 flex justify-between text-[10px]" style={{ color: "var(--text-faint)" }}>
+          <span>{station.stall_occupied} occupied</span>
+          <span>{station.stall_available} available</span>
+        </div>
       </div>
 
       <div
@@ -36,6 +99,7 @@ export function StationDetailContent({ station }: { station: StationRecord }) {
 
       <dl className="space-y-3 text-[13px]">
         <DetailRow label="Total stalls" value={String(station.stall_total)} />
+        <DetailRow label="Charging now" value={formatPower(station.current_power_kw)} mono />
         <DetailRow label="Max power" value={formatPower(station.max_power_kw)} mono />
         <DetailRow label="Congestion" value={`${station.congestion_score} / 100`} mono />
         <DetailRow label="Reliability" value={`${station.reliability_score} / 100`} mono />

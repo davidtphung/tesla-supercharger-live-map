@@ -1,4 +1,9 @@
-import type { StationRecord, StationSnapshot, ProviderMeta } from "@/lib/schema/station";
+import type {
+  AdapterMeta,
+  StationRecord,
+  StationSnapshot,
+  ProviderMeta,
+} from "@/lib/schema/station";
 
 export interface FetchOptions {
   force?: boolean;
@@ -9,7 +14,7 @@ export interface MetadataAdapter {
   readonly name: string;
   fetchMetadata(options?: FetchOptions): Promise<{
     records: Partial<StationRecord>[];
-    meta: Omit<ProviderMeta, "record_count">;
+    meta: AdapterMeta;
   }>;
 }
 
@@ -20,7 +25,7 @@ export interface OccupancyAdapter {
     options?: FetchOptions
   ): Promise<{
     patches: OccupancyPatch[];
-    meta: Omit<ProviderMeta, "record_count">;
+    meta: AdapterMeta;
   }>;
 }
 

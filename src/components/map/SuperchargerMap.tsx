@@ -37,6 +37,7 @@ function stationsToGeoJSON(
         available: s.stall_available,
         occupied: s.stall_occupied,
         total: s.stall_total,
+        current_power: s.current_power_kw,
         congestion: s.congestion_score,
         power: s.max_power_kw,
         heat: congestionHeatColor(s.congestion_score),
@@ -195,7 +196,10 @@ export function SuperchargerMap({
           .setHTML(
             `<div role="status">
               <strong style="font-weight:600">${props.name}</strong><br/>
-              <span style="font-family:monospace;font-size:12px;opacity:0.7">${props.available}/${props.total} available · ${props.power} kW</span>
+              <span style="font-family:monospace;font-size:12px;opacity:0.85;color:var(--success,#22c55e)">${props.available} available</span>
+              <span style="font-family:monospace;font-size:12px;opacity:0.7"> · </span>
+              <span style="font-family:monospace;font-size:12px;opacity:0.85;color:var(--warning,#f59e0b)">${props.occupied ?? Math.max(0, Number(props.total) - Number(props.available))} occupied</span><br/>
+              <span style="font-family:monospace;font-size:12px;opacity:0.7">${props.current_power ?? 0} kW charging · ${props.total} stalls</span>
             </div>`
           )
           .addTo(map);

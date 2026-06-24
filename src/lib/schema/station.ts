@@ -15,6 +15,8 @@ export type EnergyPortfolioType =
 
 export type DataConfidence = "high" | "medium" | "low";
 
+export type OccupancySource = "tesla-fleet" | "modeled-occupancy" | "unknown";
+
 export type StationStatus =
   | "OPEN"
   | "CONSTRUCTION"
@@ -49,6 +51,8 @@ export interface StationRecord {
   last_updated: string;
   reliability_score: number;
   congestion_score: number;
+  current_power_kw: number;
+  occupancy_source: OccupancySource;
   notes?: string;
   facility_name?: string;
   date_opened?: string;
@@ -65,12 +69,25 @@ export interface StationSnapshot {
   congestion_score: number;
 }
 
-export interface ProviderMeta {
+export interface NetworkStatsMeta {
+  stall_available: number;
+  stall_occupied: number;
+  stall_total: number;
+  stall_down: number;
+  current_power_kw: number;
+  utilization_pct: number;
+}
+
+export interface AdapterMeta {
   source: string;
   fetched_at: string;
   stale_after_ms: number;
   confidence: DataConfidence;
+}
+
+export interface ProviderMeta extends AdapterMeta {
   record_count: number;
+  network_stats: NetworkStatsMeta;
 }
 
 export interface StationsPayload {

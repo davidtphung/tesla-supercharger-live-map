@@ -9,15 +9,17 @@ import { SummaryCards } from "@/components/panels/SummaryCards";
 import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
 import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 import { AboutPanel } from "@/components/panels/AboutPanel";
+import { LiveStatsBar } from "@/components/panels/LiveStatsBar";
 import { StationDetailDrawer } from "@/components/panels/StationDetailDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { filterStations } from "@/lib/filter-stations";
 import { useStations } from "@/lib/hooks/useStations";
+import { aggregateNetworkStats } from "@/lib/scoring/power";
 import { useFilterStore } from "@/store/filters";
 import { useUiStore } from "@/store/ui";
 
 export function AppShell() {
-  const { data, loading, error, refresh } = useStations(60_000);
+  const { data, loading, error, refresh } = useStations(30_000);
   const filters = useFilterStore();
   const { mobileSheet, closeMobileSheet } = useUiStore();
 
@@ -40,8 +42,13 @@ export function AppShell() {
     [stations]
   );
 
+  const liveStats = useMemo(
+    () => aggregateNetworkStats(filtered),
+    [filtered]
+  );
+
   const announceText = selectedStation
-    ? `${selectedStation.station_name}. ${selectedStation.stall_available} of ${selectedStation.stall_total} stalls available. Status: ${selectedStation.occupancy_status}.`
+    ? `${selectedStation.station_name}. ${selectedStation.stall_available} available, ${selectedStation.stall_occupied} occupied, ${selectedStation.current_power_kw} kilowatts charging. Status: ${selectedStation.occupancy_status}.`
     : "";
 
   return (
@@ -67,11 +74,12 @@ export function AppShell() {
         source={data?.meta.source}
         confidence={data?.meta.confidence}
         stationCount={filtered.length}
+        liveStats={liveStats}
         onRefresh={refresh}
       />
 
       <aside
-        className="pointer-events-none absolute bottom-3 left-3 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:w-[min(340px,calc(100vw-2rem))]"
+        className="pointer-events-none absolute bottom-3 left-3 top-[calc(13.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:top-[calc(14rem+var(--safe-top))] lg:w-[min(340px,calc(100vw-2rem))]"
         aria-label="Filters and insights"
       >
         <div className="pointer-events-auto">
@@ -106,6 +114,7 @@ export function AppShell() {
         onClose={closeMobileSheet}
       >
         <div className="space-y-4">
+          <LiveStatsBar stats={liveStats} embedded />
           <SummaryCards stations={filtered} />
           <TimelinePlayer stationId={filters.selectedStationId} />
         </div>

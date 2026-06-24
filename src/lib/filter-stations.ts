@@ -59,3 +59,17 @@ export function topResilient(stations: StationRecord[], n = 5): StationRecord[] 
     .sort((a, b) => b.reliability_score - a.reliability_score)
     .slice(0, n);
 }
+
+export function topAvailable(stations: StationRecord[], n = 5): StationRecord[] {
+  return [...stations]
+    .filter((s) => s.station_status === "OPEN" && s.stall_available > 0)
+    .sort((a, b) => b.stall_available - a.stall_available)
+    .slice(0, n);
+}
+
+export function topChargingNow(stations: StationRecord[], n = 5): StationRecord[] {
+  return [...stations]
+    .filter((s) => s.station_status === "OPEN" && s.current_power_kw > 0)
+    .sort((a, b) => b.current_power_kw - a.current_power_kw)
+    .slice(0, n);
+}

@@ -8,16 +8,26 @@ import { teslaFleetAdapter } from "@/lib/providers/adapters/tesla-fleet";
 import type {
   MetadataAdapter,
   OccupancyAdapter,
+  OccupancyPatch,
   StationDataProvider,
 } from "@/lib/providers/types";
-import type { StationRecord, StationSnapshot } from "@/lib/schema/station";
+import type {
+  StationRecord,
+  StationSnapshot,
+  StationsPayload,
+} from "@/lib/schema/station";
 import {
   computeCongestionScore,
   computeReliabilityScore,
   deriveOccupancyStatus,
 } from "@/lib/scoring/congestion";
+import {
+  aggregateNetworkStats,
+  estimateCurrentPowerKw,
+} from "@/lib/scoring/power";
+import type { OccupancySource } from "@/lib/schema/station";
 
-const STATIONS_CACHE_KEY = "stations:composite:v1";
+const STATIONS_CACHE_KEY = "stations:composite:v2";
 const TIMELINE_CACHE_PREFIX = "timeline:";
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
@@ -63,13 +73,15 @@ function finalizeStation(partial: Partial<StationRecord>): StationRecord {
     last_updated: partial.last_updated ?? new Date().toISOString(),
     reliability_score: 0,
     congestion_score: 0,
+    current_power_kw: partial.current_power_kw ?? 0,
+    occupancy_source: partial.occupancy_source ?? "unknown",
     notes: partial.notes,
     facility_name: partial.facility_name,
     date_opened: partial.date_opened,
     station_status,
   };
 
-  return {
+  const withScores = {
     ...base,
     reliability_score: computeReliabilityScore(base),
     congestion_score: computeCongestionScore(
@@ -79,6 +91,19 @@ function finalizeStation(partial: Partial<StationRecord>): StationRecord {
       base.stall_total
     ),
   };
+
+  return {
+    ...withScores,
+    current_power_kw:
+      partial.current_power_kw ?? estimateCurrentPowerKw(withScores),
+  };
+}
+
+function resolveOccupancySource(sourceName?: string): OccupancySource {
+  if (!sourceName) return "unknown";
+  if (sourceName.includes("tesla-fleet")) return "tesla-fleet";
+  if (sourceName.includes("modeled-occupancy")) return "modeled-occupancy";
+  return "unknown";
 }
 
 export class CompositeStationProvider implements StationDataProvider {
@@ -94,10 +119,7 @@ export class CompositeStationProvider implements StationDataProvider {
 
   async fetchStations(options?: import("@/lib/providers/types").FetchOptions) {
     if (!options?.force) {
-      const cached = cacheGet<{
-        stations: StationRecord[];
-        meta: { source: string; fetched_at: string; stale_after_ms: number; confidence: "high" | "medium" | "low"; record_count: number };
-      }>(STATIONS_CACHE_KEY);
+      const cached = cacheGet<StationsPayload>(STATIONS_CACHE_KEY);
       if (cached) return cached;
     }
 
@@ -111,7 +133,7 @@ export class CompositeStationProvider implements StationDataProvider {
     const ids = stations.map((s) => s.station_id);
     let occupancyConfidence: "high" | "medium" | "low" = "low";
     let occupancySource = "modeled-occupancy";
-    const allPatches = [];
+    const allPatches: OccupancyPatch[] = [];
 
     for (const adapter of this.occupancyAdapters) {
       const { patches, meta } = await adapter.fetchOccupancy(ids, options);
@@ -132,11 +154,15 @@ export class CompositeStationProvider implements StationDataProvider {
       finalizeStation({
         ...s,
         source_name: `${s.source_name}+${occupancySource}`,
+        occupancy_source: resolveOccupancySource(
+          patchSourceForStation(s, allPatches) ?? occupancySource
+        ),
       })
     );
 
     this.recordTimelineSnapshots(stations);
 
+    const network = aggregateNetworkStats(stations);
     const payload = {
       stations,
       meta: {
@@ -145,6 +171,14 @@ export class CompositeStationProvider implements StationDataProvider {
         stale_after_ms: CACHE_TTL_MS,
         confidence: occupancyConfidence,
         record_count: stations.length,
+        network_stats: {
+          stall_available: network.stall_available,
+          stall_occupied: network.stall_occupied,
+          stall_total: network.stall_total,
+          stall_down: network.stall_down,
+          current_power_kw: network.current_power_kw,
+          utilization_pct: network.utilization_pct,
+        },
       },
     };
 
@@ -211,6 +245,13 @@ export class CompositeStationProvider implements StationDataProvider {
       cacheSet(key, next, 24 * 60 * 60 * 1000);
     }
   }
+}
+
+function patchSourceForStation(
+  station: StationRecord,
+  patches: OccupancyPatch[]
+): string | undefined {
+  return patches.find((p) => p.station_id === station.station_id)?.source_name;
 }
 
 export const stationProvider = new CompositeStationProvider();

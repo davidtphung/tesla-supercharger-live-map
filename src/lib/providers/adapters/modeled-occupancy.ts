@@ -4,6 +4,7 @@ import {
   computeCongestionScore,
   deriveOccupancyStatus,
 } from "@/lib/scoring/congestion";
+import { estimateCurrentPowerKw } from "@/lib/scoring/power";
 
 /** Deterministic pseudo-live occupancy model for stations without a live feed. */
 function seededRandom(seed: string): () => number {
@@ -154,7 +155,7 @@ export function applyOccupancyPatches(
         station.station_status
       );
 
-    return {
+    const updated = {
       ...station,
       stall_available,
       stall_occupied,
@@ -169,6 +170,17 @@ export function applyOccupancyPatches(
       last_updated: patch.last_updated ?? station.last_updated,
       source_url: patch.source_url ?? station.source_url,
       source_name: patch.source_name ?? station.source_name,
+      occupancy_source:
+        patch.source_name === "tesla-fleet"
+          ? ("tesla-fleet" as const)
+          : patch.source_name === "modeled-occupancy"
+            ? ("modeled-occupancy" as const)
+            : station.occupancy_source,
+    };
+
+    return {
+      ...updated,
+      current_power_kw: estimateCurrentPowerKw(updated),
     };
   });
 }

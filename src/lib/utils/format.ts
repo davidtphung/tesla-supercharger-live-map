@@ -18,7 +18,13 @@ export function formatTimestamp(iso: string): string {
 
 export function formatPower(kw: number): string {
   if (!kw) return "—";
-  return `${kw} kW`;
+  if (kw >= 1_000_000) return `${(kw / 1_000_000).toFixed(2)} GW`;
+  if (kw >= 1_000) return `${(kw / 1_000).toFixed(kw >= 10_000 ? 1 : 2)} MW`;
+  return `${Math.round(kw).toLocaleString()} kW`;
+}
+
+export function formatCount(value: number): string {
+  return value.toLocaleString();
 }
 
 export function formatPercent(value: number): string {
