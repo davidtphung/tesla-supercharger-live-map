@@ -1,56 +1,70 @@
-# ~ (Home Directory) Git Repository
+# Tesla Supercharger Intelligence Map
 
-This is a **selective dotfiles and configuration tracker** for the macOS home directory.
+Live worldwide map for Tesla Supercharger occupancy, congestion, and energy portfolio intelligence.
 
-## Why a git repo at $HOME?
+## Features
 
-- Convenient for versioning shell configs, git settings, and AI/agent tool preferences.
-- **NOT** intended as a general project or backup repo.
+- Worldwide Supercharger map with occupancy-colored markers
+- Station detail drawer (stalls, power, reliability, congestion, attribution)
+- Energy portfolio layer: solar, battery, grid, hybrid, unknown
+- Congestion heat map
+- Search and filters (occupancy, power, region, energy type)
+- Watchlist (local persistence)
+- Timeline playback for occupancy changes
+- Summary cards: busiest, highest power, most resilient
+- Provider abstraction with caching, retry, and stale-data handling
+- Vercel cron refresh every 15 minutes
 
-## Safety First
+## Data sources
 
-A comprehensive [.gitignore](.gitignore) is in place that:
+| Layer | Source | Confidence |
+|-------|--------|------------|
+| Station metadata | [supercharge.info](https://supercharge.info) | High |
+| Live occupancy | Tesla Fleet API (optional) | High |
+| Fallback occupancy | Deterministic modeled refresh (15 min buckets) | Low |
 
-- Ignores **everything** by default (`*`)
-- Explicitly allows only a few small, safe config **files**
-- Blacklists user data directories (Pictures, Music, Documents, Downloads, Library, Applications, Projects, etc.)
-- Blacklists caches, histories, media files, and binaries
-- Prevents accidental `git add .` disasters that would bloat the repo with GBs of photos, music, node_modules, etc.
+Set `TESLA_FLEET_TOKEN` for live occupancy. Without it, occupancy is modeled from station characteristics and time-of-day demand patterns — always labeled in the UI.
 
-## How to track additional files
+## Architecture
 
-```bash
-# Force-add specific files you want versioned (bypasses the broad *)
-git add -f .zshrc .gitconfig .claude.json
-
-# Check what will be committed
-git status
-
-git commit -m "chore: track zsh and claude config"
+```
+src/
+├── app/                    # Next.js App Router pages + API routes
+├── components/             # Map, panels, layout, UI primitives
+├── lib/
+│   ├── schema/             # Normalized StationRecord schema
+│   ├── providers/          # Metadata + occupancy adapters, composite provider
+│   ├── scoring/            # Congestion + reliability scoring
+│   ├── cache/              # In-memory TTL cache + retry helper
+│   └── hooks/              # Client data hooks
+└── store/                  # Zustand filters + watchlist state
 ```
 
-## Recommended files to consider tracking
+## Development
 
-- Shell: `.zshrc`, `.profile`
-- Git: `.gitconfig`
-- AI tools: `.claude.json` (sanitized)
-- Editor: specific small settings files only
+```bash
+npm install
+npm run dev
+```
 
-## Important Notes
+Open [http://localhost:3000](http://localhost:3000).
 
-- **Never** `git add .` or `git add *` at this level.
-- Review `git status` and `git diff --cached` carefully before every commit.
-- Private keys, tokens, large workspaces, and personal data are excluded by design.
-- For more advanced dotfiles management, consider tools like [chezmoi](https://www.chezmoi.io/), [yadm](https://yadm.io/), or a bare-repo + worktree pattern.
+## Environment
 
-## GitHub
+Copy `.env.example` to `.env.local`:
 
-**Repository**: https://github.com/davidtphung/dotfiles (private)
+- `TESLA_FLEET_TOKEN` — optional live occupancy
+- `CRON_SECRET` — protects `/api/refresh` on Vercel
+- `NEXT_PUBLIC_MAP_STYLE` — MapLibre style URL
 
-Connected via GitHub CLI + Grok.
+## Deploy (Vercel)
 
-## Current branch
+```bash
+npx vercel --prod
+```
 
-`main`
+Cron job configured in `vercel.json` hits `/api/refresh` every 15 minutes.
 
-Initialized: June 2026 (via Grok CLI session)
+## License
+
+MIT

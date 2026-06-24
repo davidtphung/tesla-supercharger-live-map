@@ -1,131 +1,52 @@
-# Home directory Git repository (.git in ~)
-# This repo is intended for selective dotfiles / config tracking only.
-# Everything is ignored by default to prevent accidentally committing
-# large binaries, caches, photos, music, or other user data.
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Ignore everything
-*
+# testing
+/coverage
 
-# Explicitly track this file
-!.gitignore
+# next.js
+/.next/
+/out/
 
-# === Shell / Terminal configs ===
-!/.zshrc
-!/.zshrc.bak*
-!/.zprofile
-!/.profile
-!/.bashrc
-!/.bash_profile
+# production
+/build
 
-# === Git ===
-!/.gitconfig
-!/.gitattributes
-!/.gitignore
+# misc
+.DS_Store
+*.pem
 
-# === Common editor / dev tool configs (add more as needed) ===
-!/.editorconfig
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# === AI / Agent tool configs ===
-# Only track lightweight top-level config files (review for secrets before add -f).
-# Full tool directories (plugins, caches, large workspaces) are intentionally ignored.
-!/.claude.json
-!/.claude.json.backup
+# env files
+.env
+.env*.local
 
-# If you want to track specific files inside these dirs later:
-#   git add -f .cursor/some-specific-file.json
-#   (Avoid adding entire .cursor/, .grok/, .agents/, .claude/ dirs)
+# vercel
+.vercel
 
-# === SSH (NEVER track private keys) ===
-!/.ssh/config
-!/.ssh/known_hosts
-!/.ssh/authorized_keys
-/.ssh/id_*
-/.ssh/*_key
-/.ssh/*.pem
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# === Other dev tool configs (selective) ===
-!/.config
-# Ignore most things inside .config unless explicitly allowed later
-.config/**
+# editor
+.idea
+.vscode
 
-# === Never track these top-level user dirs (data, apps, large media) ===
-/Applications
-/CascadeProjects
-/Desktop
-/Documents
-/Downloads
-/Library
-/Movies
-/Music
-/Orion
-/Pictures
-/Projects
-/Public
-/Trash
-/construction-terminal
-
-# === Caches, temps, histories, build artifacts ===
-/.cache
-/.local
-/.npm
-/.ollama
-/.hermes
-/.keras
-/.matplotlib
-/.mcp-auth
-/.serena
-/.windsurf
-/.zero
-/.codeium
-/.codex
-/.cups
-
-/.Trash
-/.DS_Store
-/.CFUserTextEncoding
-/.zcompdump*
-/.zsh_history
-/.zsh_sessions
-*.swp
-*.swo
-*~
-*.log
-*.tmp
-
-# === Large media / binary files (common in home) ===
-*.m4a
-*.mp3
-*.wav
-*.mov
-*.mp4
-*.avi
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.heic
-*.pdf
-*.zip
-*.tar
-*.gz
-*.iso
-
-# === Backups and autosaves ===
-*.bak
-*.backup
-*.old
-*.orig
-.claude.json.backup
-
-# === Misc macOS / system ===
-*.icloud
-Icon?
-.Spotlight-V100
-.Trashes
-.fseventsd
-.documentRevisions-V100
-
-# Note: To track additional files, use:
-#   git add -f <path>
-# Review with `git status` before committing.
-# Consider using a dedicated dotfiles management setup (e.g. bare repo or chezmoi) for production use.
+# local shell/dotfiles in worktree (not part of app)
+.claude.json
+.gitconfig
+.profile
+.zshrc
+.zshrc.bak*
+.config/
