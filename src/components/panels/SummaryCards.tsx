@@ -23,47 +23,50 @@ function MiniList({
   const setSelected = useFilterStore((s) => s.setSelectedStationId);
 
   return (
-    <div className="panel p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <section className="panel p-4" aria-labelledby={`list-${title.replace(/\s/g, "-")}`}>
+      <h3
+        id={`list-${title.replace(/\s/g, "-")}`}
+        className="mb-3 flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-slate-400"
+      >
         {icon}
         {title}
-      </div>
-      <ul className="space-y-1.5">
+      </h3>
+      <ul className="space-y-1">
         {stations.map((s) => (
           <li key={s.station_id}>
             <button
               type="button"
               onClick={() => setSelected(s.station_id)}
-              className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-xs transition hover:bg-slate-800/80"
+              className="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-[15px] transition hover:bg-slate-800/80 focus-visible:bg-slate-800/80"
             >
               <span className="truncate text-slate-200">{s.station_name}</span>
-              <span className="shrink-0 text-slate-500">{metric(s)}</span>
+              <span className="shrink-0 tabular-nums text-slate-500">{metric(s)}</span>
             </button>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }
 
 export function SummaryCards({ stations }: { stations: StationRecord[] }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-3" role="region" aria-label="Station insights">
       <MiniList
         title="Busiest now"
-        icon={<Activity className="h-3.5 w-3.5 text-amber-400" />}
+        icon={<Activity className="h-4 w-4 text-amber-400" aria-hidden="true" />}
         stations={topBusiest(stations)}
         metric={(s) => `${s.congestion_score}%`}
       />
       <MiniList
         title="Highest power"
-        icon={<BatteryCharging className="h-3.5 w-3.5 text-sky-400" />}
+        icon={<BatteryCharging className="h-4 w-4 text-sky-400" aria-hidden="true" />}
         stations={topPower(stations)}
         metric={(s) => `${s.max_power_kw} kW`}
       />
       <MiniList
         title="Most resilient"
-        icon={<Shield className="h-3.5 w-3.5 text-emerald-400" />}
+        icon={<Shield className="h-4 w-4 text-emerald-400" aria-hidden="true" />}
         stations={topResilient(stations)}
         metric={(s) => `${s.reliability_score}`}
       />

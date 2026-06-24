@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource, type Map, type Popup } from "maplibre-gl";
 import type { StationRecord } from "@/lib/schema/station";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { markerColor, congestionHeatColor } from "@/lib/utils/colors";
 
 const MAP_STYLE =
@@ -60,6 +61,7 @@ export function SuperchargerMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const popupRef = useRef<Popup | null>(null);
+  const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -69,9 +71,14 @@ export function SuperchargerMap({
       style: MAP_STYLE,
       center: [-98.5795, 39.8283],
       zoom: 3.2,
+      attributionControl: {},
+      cooperativeGestures: true,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      "bottom-right"
+    );
 
     map.on("load", () => {
       map.addSource("stations", {
@@ -97,7 +104,7 @@ export function SuperchargerMap({
         type: "circle",
         source: "stations",
         paint: {
-          "circle-radius": 10,
+          "circle-radius": 12,
           "circle-color": ["get", "color"],
           "circle-opacity": 0.18,
           "circle-blur": 0.6,
@@ -114,18 +121,37 @@ export function SuperchargerMap({
             ["linear"],
             ["zoom"],
             3,
-            3,
+            4,
             8,
-            6,
+            7,
             12,
-            8,
+            10,
           ],
           "circle-color": ["get", "color"],
           "circle-stroke-color": "#0f172a",
-          "circle-stroke-width": 1.2,
+          "circle-stroke-width": 1.5,
           "circle-opacity": 0.95,
         },
       });
+
+      const selectStation = (id: string, lngLat: maplibregl.LngLat, props: Record<string, unknown>) => {
+        onSelectStation(id);
+        if (popupRef.current) popupRef.current.remove();
+        popupRef.current = new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: false,
+          offset: 14,
+          className: "station-popup",
+        })
+          .setLngLat(lngLat)
+          .setHTML(
+            `<div role="status">
+              <strong>${props.name}</strong><br/>
+              <span style="color:#cbd5e1">${props.available}/${props.total} available · ${props.power} kW</span>
+            </div>`
+          )
+          .addTo(map);
+      };
 
       map.on("click", "stations-points", (e) => {
         const feature = e.features?.[0];
@@ -133,16 +159,7 @@ export function SuperchargerMap({
         const props = feature.properties;
         const id = props.station_id as string | undefined;
         if (!id) return;
-        onSelectStation(id);
-
-        if (popupRef.current) popupRef.current.remove();
-        popupRef.current = new maplibregl.Popup({ closeButton: false, offset: 12 })
-          .setLngLat(e.lngLat)
-          .setHTML(
-            `<strong>${props.name}</strong><br/>
-             <span style="color:#94a3b8">${props.available}/${props.total} free · ${props.power} kW</span>`
-          )
-          .addTo(map);
+        selectStation(id, e.lngLat, props);
       });
 
       map.on("mouseenter", "stations-points", () => {
@@ -193,14 +210,28 @@ export function SuperchargerMap({
     if (!map?.isStyleLoaded() || !selectedStationId) return;
     const station = stations.find((s) => s.station_id === selectedStationId);
     if (!station) return;
-    map.flyTo({
-      center: [station.longitude, station.latitude],
-      zoom: Math.max(map.getZoom(), 9),
-      speed: 1.2,
-    });
-  }, [selectedStationId, stations]);
+
+    if (reducedMotion) {
+      map.jumpTo({
+        center: [station.longitude, station.latitude],
+        zoom: Math.max(map.getZoom(), 9),
+      });
+    } else {
+      map.flyTo({
+        center: [station.longitude, station.latitude],
+        zoom: Math.max(map.getZoom(), 9),
+        speed: 1.2,
+      });
+    }
+  }, [selectedStationId, stations, reducedMotion]);
 
   return (
-    <div ref={containerRef} className="absolute inset-0 h-full w-full" />
+    <div
+      ref={containerRef}
+      className="absolute inset-0 h-full w-full"
+      role="application"
+      aria-label="Interactive map of Tesla Supercharger stations. Tap or click a marker for details."
+      tabIndex={0}
+    />
   );
 }

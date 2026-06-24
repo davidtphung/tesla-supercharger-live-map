@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import type { StationSnapshot } from "@/lib/schema/station";
 import { formatTimestamp } from "@/lib/utils/format";
+import { IconButton } from "@/components/ui/IconButton";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 
 export function TimelinePlayer({ stationId }: { stationId: string | null }) {
   const [snapshots, setSnapshots] = useState<StationSnapshot[]>([]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     if (!stationId) {
@@ -24,12 +27,12 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
   }, [stationId]);
 
   useEffect(() => {
-    if (!playing || snapshots.length < 2) return;
+    if (!playing || snapshots.length < 2 || reducedMotion) return;
     const id = setInterval(() => {
       setIndex((i) => (i + 1) % snapshots.length);
     }, 800);
     return () => clearInterval(id);
-  }, [playing, snapshots.length]);
+  }, [playing, snapshots.length, reducedMotion]);
 
   const current = snapshots[index];
   const maxOccupied = useMemo(
@@ -39,41 +42,45 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
 
   if (!stationId) {
     return (
-      <div className="panel p-3 text-xs text-slate-500">
+      <div className="panel p-4 text-[15px] text-slate-500">
         Select a station to replay occupancy changes.
       </div>
     );
   }
 
   return (
-    <div className="panel space-y-2 p-3">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <section className="panel space-y-3 p-4" aria-label="Occupancy timeline">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-slate-400">
           Timeline playback
-        </div>
-        <button
-          type="button"
+        </h3>
+        <IconButton
+          label={playing ? "Pause timeline" : "Play timeline"}
           onClick={() => setPlaying((p) => !p)}
-          className="rounded-md border border-slate-700 p-1.5 text-slate-300 hover:border-slate-500"
+          aria-pressed={playing}
         >
           {playing ? (
-            <Pause className="h-3.5 w-3.5" />
+            <Pause className="h-5 w-5" aria-hidden="true" />
           ) : (
-            <Play className="h-3.5 w-3.5" />
+            <Play className="h-5 w-5" aria-hidden="true" />
           )}
-        </button>
+        </IconButton>
       </div>
 
       {current ? (
         <>
-          <div className="text-xs text-slate-300">
+          <p className="text-[15px] text-slate-300" aria-live="polite">
             {formatTimestamp(current.timestamp)} · {current.occupancy_status}
-          </div>
-          <div className="flex h-16 items-end gap-0.5">
+          </p>
+          <div
+            className="flex h-20 items-end gap-1"
+            role="img"
+            aria-label={`Occupancy chart, ${current.stall_occupied} stalls occupied`}
+          >
             {snapshots.map((s, i) => (
               <div
                 key={s.timestamp}
-                className="flex-1 rounded-t bg-sky-500/30 transition"
+                className="flex-1 rounded-t bg-sky-500/30 transition-colors"
                 style={{
                   height: `${(s.stall_occupied / maxOccupied) * 100}%`,
                   backgroundColor:
@@ -89,26 +96,36 @@ export function TimelinePlayer({ stationId }: { stationId: string | null }) {
             max={Math.max(0, snapshots.length - 1)}
             value={index}
             onChange={(e) => setIndex(Number(e.target.value))}
-            className="w-full accent-sky-500"
+            className="h-11 w-full accent-sky-500"
+            aria-label="Scrub timeline"
+            aria-valuemin={0}
+            aria-valuemax={Math.max(0, snapshots.length - 1)}
+            aria-valuenow={index}
           />
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="grid grid-cols-3 gap-2 text-center text-[15px]">
             <div>
-              <div className="text-emerald-400">{current.stall_available}</div>
-              <div className="text-slate-500">Available</div>
+              <div className="text-xl font-semibold tabular-nums text-emerald-400">
+                {current.stall_available}
+              </div>
+              <div className="text-[13px] text-slate-500">Available</div>
             </div>
             <div>
-              <div className="text-amber-400">{current.stall_occupied}</div>
-              <div className="text-slate-500">Occupied</div>
+              <div className="text-xl font-semibold tabular-nums text-amber-400">
+                {current.stall_occupied}
+              </div>
+              <div className="text-[13px] text-slate-500">Occupied</div>
             </div>
             <div>
-              <div className="text-slate-400">{current.stall_down}</div>
-              <div className="text-slate-500">Down</div>
+              <div className="text-xl font-semibold tabular-nums text-slate-300">
+                {current.stall_down}
+              </div>
+              <div className="text-[13px] text-slate-500">Down</div>
             </div>
           </div>
         </>
       ) : (
-        <p className="text-xs text-slate-500">Loading timeline…</p>
+        <p className="text-[15px] text-slate-500">Loading timeline…</p>
       )}
-    </div>
+    </section>
   );
 }

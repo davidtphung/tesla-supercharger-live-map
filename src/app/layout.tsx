@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SkipLink } from "@/components/ui/SkipLink";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,11 +15,17 @@ export const metadata: Metadata = {
     "solar",
     "battery",
   ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Supercharger Map",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#0a0e17",
 };
 
@@ -27,7 +34,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SkipLink />
+        {children}
+      </body>
     </html>
   );
 }

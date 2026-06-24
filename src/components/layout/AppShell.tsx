@@ -2,19 +2,23 @@
 
 import { useMemo } from "react";
 import { Header } from "@/components/layout/Header";
+import { MobileToolbar } from "@/components/layout/MobileToolbar";
 import { SuperchargerMap } from "@/components/map/SuperchargerMap";
 import { FilterPanel } from "@/components/panels/FilterPanel";
 import { SummaryCards } from "@/components/panels/SummaryCards";
 import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
 import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 import { StationDetailDrawer } from "@/components/panels/StationDetailDrawer";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { filterStations } from "@/lib/filter-stations";
 import { useStations } from "@/lib/hooks/useStations";
 import { useFilterStore } from "@/store/filters";
+import { useUiStore } from "@/store/ui";
 
 export function AppShell() {
   const { data, loading, error, refresh } = useStations(60_000);
   const filters = useFilterStore();
+  const { mobileSheet, closeMobileSheet } = useUiStore();
 
   const stations = useMemo(() => data?.stations ?? [], [data?.stations]);
   const filtered = useMemo(
@@ -35,15 +39,32 @@ export function AppShell() {
     [stations]
   );
 
+  const announceText = selectedStation
+    ? `${selectedStation.station_name}. ${selectedStation.stall_available} of ${selectedStation.stall_total} stalls available. Status: ${selectedStation.occupancy_status}.`
+    : "";
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#0a0e17]">
-      <SuperchargerMap
-        stations={filtered}
-        selectedStationId={filters.selectedStationId}
-        showHeatmap={filters.showHeatmap}
-        emphasizeEnergy={filters.emphasizeEnergyLayer}
-        onSelectStation={filters.setSelectedStationId}
-      />
+      <main
+        id="main-map"
+        className="absolute inset-0 pb-[calc(68px+var(--safe-bottom))] md:pb-0"
+        aria-label="Tesla Supercharger map"
+      >
+        <SuperchargerMap
+          stations={filtered}
+          selectedStationId={filters.selectedStationId}
+          showHeatmap={filters.showHeatmap}
+          emphasizeEnergy={filters.emphasizeEnergyLayer}
+          onSelectStation={(id) => {
+            closeMobileSheet();
+            filters.setSelectedStationId(id);
+          }}
+        />
+      </main>
+
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announceText}
+      </div>
 
       <Header
         loading={loading}
@@ -54,43 +75,90 @@ export function AppShell() {
         onRefresh={refresh}
       />
 
-      <div className="pointer-events-none absolute bottom-3 left-3 top-20 z-20 flex w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:top-24">
+      {/* Desktop sidebar */}
+      <aside
+        className="pointer-events-none absolute bottom-4 left-4 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(340px,calc(100vw-2rem))] flex-col gap-3 lg:flex"
+        aria-label="Filters and insights"
+      >
         <div className="pointer-events-auto">
           <FilterPanel regionsInData={regionsInData} />
         </div>
-        <div className="pointer-events-auto hidden lg:block">
+        <div className="pointer-events-auto">
           <SummaryCards stations={filtered} />
         </div>
-        <div className="pointer-events-auto hidden md:block">
+        <div className="pointer-events-auto">
           <WatchlistPanel stations={stations} />
         </div>
-        <div className="pointer-events-auto hidden xl:block">
+        <div className="pointer-events-auto">
           <TimelinePlayer stationId={filters.selectedStationId} />
         </div>
-      </div>
+      </aside>
+
+      {/* Tablet: filters only */}
+      <aside
+        className="pointer-events-none absolute bottom-4 left-4 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(320px,40vw)] md:block lg:hidden"
+        aria-label="Filters"
+      >
+        <div className="pointer-events-auto">
+          <FilterPanel regionsInData={regionsInData} />
+        </div>
+      </aside>
+
+      {/* Mobile sheets */}
+      <BottomSheet
+        open={mobileSheet === "filters"}
+        title="Filters"
+        onClose={closeMobileSheet}
+      >
+        <FilterPanel regionsInData={regionsInData} embedded />
+      </BottomSheet>
+
+      <BottomSheet
+        open={mobileSheet === "insights"}
+        title="Insights"
+        onClose={closeMobileSheet}
+      >
+        <div className="space-y-4">
+          <SummaryCards stations={filtered} />
+          <TimelinePlayer stationId={filters.selectedStationId} />
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={mobileSheet === "watchlist"}
+        title="Saved stations"
+        onClose={closeMobileSheet}
+      >
+        <WatchlistPanel stations={stations} embedded />
+      </BottomSheet>
 
       <StationDetailDrawer
         station={selectedStation}
         onClose={() => filters.setSelectedStationId(null)}
       />
 
+      <MobileToolbar onShowMap={() => filters.setSelectedStationId(null)} />
+
       {error && (
-        <div className="pointer-events-auto absolute bottom-3 left-1/2 z-30 -translate-x-1/2 rounded-lg border border-red-500/40 bg-red-950/80 px-4 py-2 text-sm text-red-200">
+        <div
+          role="alert"
+          className="pointer-events-auto absolute bottom-[calc(76px+var(--safe-bottom))] left-1/2 z-30 max-w-[92vw] -translate-x-1/2 rounded-xl border border-red-500/40 bg-red-950/90 px-4 py-3 text-[15px] text-red-100 md:bottom-4"
+        >
           {error}
         </div>
       )}
 
-      <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#0a0e17] to-transparent px-4 pb-2 pt-6 text-center text-[10px] text-slate-600">
-        Station metadata from{" "}
+      <footer className="pointer-events-none absolute inset-x-0 bottom-[calc(68px+var(--safe-bottom))] z-10 hidden bg-gradient-to-t from-[#0a0e17] to-transparent px-4 pb-2 pt-6 text-center text-[11px] text-slate-500 md:block md:bottom-0">
+        Metadata from{" "}
         <a
-          className="pointer-events-auto underline"
+          className="pointer-events-auto underline underline-offset-2"
           href="https://supercharge.info"
           target="_blank"
           rel="noopener noreferrer"
         >
           supercharge.info
         </a>
-        . Occupancy uses modeled refresh cycles unless Tesla Fleet API is configured.
+        . Occupancy is modeled unless Tesla Fleet API is configured.
       </footer>
     </div>
   );
