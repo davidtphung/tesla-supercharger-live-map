@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import maplibregl, { type GeoJSONSource, type Map, type Popup } from "maplibre-gl";
+import maplibregl, {
+  type GeoJSONSource,
+  type Map,
+  type MapLayerMouseEvent,
+  type Popup,
+} from "maplibre-gl";
 import type { StationRecord } from "@/lib/schema/station";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { MAP_STYLES } from "@/lib/theme/tokens";
@@ -57,83 +62,103 @@ export function SuperchargerMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const popupRef = useRef<Popup | null>(null);
+  const loadedThemeRef = useRef<"dark" | "light" | null>(null);
+  const stationsRef = useRef(stations);
+  const emphasizeEnergyRef = useRef(emphasizeEnergy);
+  const showHeatmapRef = useRef(showHeatmap);
+  const onSelectRef = useRef(onSelectStation);
+  const clickHandlerRef = useRef<((e: MapLayerMouseEvent) => void) | null>(null);
+  const enterHandlerRef = useRef<(() => void) | null>(null);
+  const leaveHandlerRef = useRef<(() => void) | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const resolved = useThemeStore((s) => s.resolved);
+  const themeRef = useRef(resolved);
 
-  const addStationLayers = useCallback(
-    (map: Map, theme: "dark" | "light") => {
-      map.addSource("stations", {
-        type: "geojson",
-        data: stationsToGeoJSON([], emphasizeEnergy),
-      });
+  themeRef.current = resolved;
+  stationsRef.current = stations;
+  emphasizeEnergyRef.current = emphasizeEnergy;
+  showHeatmapRef.current = showHeatmap;
+  onSelectRef.current = onSelectStation;
 
-      map.addLayer({
-        id: "stations-heat",
-        type: "circle",
-        source: "stations",
-        paint: {
-          "circle-radius": ["get", "radius"],
-          "circle-color": ["get", "heat"],
-          "circle-opacity": 0.55,
-          "circle-blur": 0.8,
-        },
-        layout: { visibility: showHeatmap ? "visible" : "none" },
-      });
+  const addStationLayers = useCallback((map: Map, theme: "dark" | "light") => {
+    if (map.getSource("stations")) {
+      if (map.getLayer("stations-points")) map.removeLayer("stations-points");
+      if (map.getLayer("stations-glow")) map.removeLayer("stations-glow");
+      if (map.getLayer("stations-heat")) map.removeLayer("stations-heat");
+      map.removeSource("stations");
+    }
 
-      map.addLayer({
-        id: "stations-glow",
-        type: "circle",
-        source: "stations",
-        paint: {
-          "circle-radius": 12,
-          "circle-color": ["get", "color"],
-          "circle-opacity": 0.2,
-          "circle-blur": 0.6,
-        },
-        layout: { visibility: showHeatmap ? "none" : "visible" },
-      });
+    map.addSource("stations", {
+      type: "geojson",
+      data: stationsToGeoJSON(stationsRef.current, emphasizeEnergyRef.current),
+    });
 
-      map.addLayer({
-        id: "stations-points",
-        type: "circle",
-        source: "stations",
-        paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            3,
-            4,
-            8,
-            7,
-            12,
-            10,
-          ],
-          "circle-color": ["get", "color"],
-          "circle-stroke-color": theme === "dark" ? "#0a1117" : "#ffffff",
-          "circle-stroke-width": 1.5,
-          "circle-opacity": 0.95,
-        },
-        layout: { visibility: showHeatmap ? "none" : "visible" },
-      });
-    },
-    [emphasizeEnergy, showHeatmap]
-  );
+    map.addLayer({
+      id: "stations-heat",
+      type: "circle",
+      source: "stations",
+      paint: {
+        "circle-radius": ["get", "radius"],
+        "circle-color": ["get", "heat"],
+        "circle-opacity": 0.55,
+        "circle-blur": 0.8,
+      },
+      layout: {
+        visibility: showHeatmapRef.current ? "visible" : "none",
+      },
+    });
+
+    map.addLayer({
+      id: "stations-glow",
+      type: "circle",
+      source: "stations",
+      paint: {
+        "circle-radius": 10,
+        "circle-color": ["get", "color"],
+        "circle-opacity": 0.18,
+        "circle-blur": 0.6,
+      },
+      layout: {
+        visibility: showHeatmapRef.current ? "none" : "visible",
+      },
+    });
+
+    map.addLayer({
+      id: "stations-points",
+      type: "circle",
+      source: "stations",
+      paint: {
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          3,
+          8,
+          6,
+          12,
+          8,
+        ],
+        "circle-color": ["get", "color"],
+        "circle-stroke-color": theme === "dark" ? "#0f172a" : "#ffffff",
+        "circle-stroke-width": 1.2,
+        "circle-opacity": 0.95,
+      },
+      layout: {
+        visibility: showHeatmapRef.current ? "none" : "visible",
+      },
+    });
+  }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    popupRef.current?.remove();
-    mapRef.current?.remove();
-    mapRef.current = null;
+    if (!containerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: MAP_STYLES[resolved],
+      style: MAP_STYLES[themeRef.current],
       center: [-98.5795, 39.8283],
       zoom: 3.2,
       attributionControl: {},
-      cooperativeGestures: true,
     });
 
     map.addControl(
@@ -141,22 +166,30 @@ export function SuperchargerMap({
       "bottom-right"
     );
 
-    map.on("load", () => {
-      addStationLayers(map, resolved);
+    const bindStationInteractions = () => {
+      if (clickHandlerRef.current) {
+        map.off("click", "stations-points", clickHandlerRef.current);
+      }
+      if (enterHandlerRef.current) {
+        map.off("mouseenter", "stations-points", enterHandlerRef.current);
+      }
+      if (leaveHandlerRef.current) {
+        map.off("mouseleave", "stations-points", leaveHandlerRef.current);
+      }
 
-      map.on("click", "stations-points", (e) => {
+      const onClick = (e: MapLayerMouseEvent) => {
         const feature = e.features?.[0];
         if (!feature?.properties) return;
         const props = feature.properties;
         const id = props.station_id as string | undefined;
         if (!id) return;
-        onSelectStation(id);
+        onSelectRef.current(id);
 
         popupRef.current?.remove();
         popupRef.current = new maplibregl.Popup({
           closeButton: true,
           closeOnClick: false,
-          offset: 14,
+          offset: 12,
         })
           .setLngLat(e.lngLat)
           .setHTML(
@@ -166,23 +199,55 @@ export function SuperchargerMap({
             </div>`
           )
           .addTo(map);
-      });
+      };
 
-      map.on("mouseenter", "stations-points", () => {
+      const onEnter = () => {
         map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "stations-points", () => {
+      };
+      const onLeave = () => {
         map.getCanvas().style.cursor = "";
-      });
-    });
+      };
+
+      clickHandlerRef.current = onClick;
+      enterHandlerRef.current = onEnter;
+      leaveHandlerRef.current = onLeave;
+
+      map.on("click", "stations-points", onClick);
+      map.on("mouseenter", "stations-points", onEnter);
+      map.on("mouseleave", "stations-points", onLeave);
+    };
+
+    const onStyleReady = () => {
+      addStationLayers(map, themeRef.current);
+      loadedThemeRef.current = themeRef.current;
+      bindStationInteractions();
+    };
+
+    map.on("load", onStyleReady);
+    map.on("style.load", onStyleReady);
 
     mapRef.current = map;
+    loadedThemeRef.current = themeRef.current;
+
     return () => {
       popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
+      loadedThemeRef.current = null;
     };
-  }, [resolved, addStationLayers, onSelectStation]);
+  }, [addStationLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loadedThemeRef.current === resolved) return;
+
+    const swapStyle = () => map.setStyle(MAP_STYLES[resolved]);
+    if (map.isStyleLoaded()) {
+      swapStyle();
+    } else {
+      map.once("load", swapStyle);
+    }
+  }, [resolved]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -237,7 +302,6 @@ export function SuperchargerMap({
       className="absolute inset-0 h-full w-full globe-canvas"
       role="application"
       aria-label="Interactive map of Tesla Supercharger stations. Tap or click a marker for details."
-      tabIndex={0}
     />
   );
 }

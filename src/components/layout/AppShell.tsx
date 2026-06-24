@@ -46,22 +46,16 @@ export function AppShell() {
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden" style={{ background: "var(--bg)" }}>
-      <main
-        id="main-map"
-        className="absolute inset-0 pb-[calc(68px+var(--safe-bottom))] md:pb-0"
-        aria-label="Tesla Supercharger map"
-      >
-        <SuperchargerMap
-          stations={filtered}
-          selectedStationId={filters.selectedStationId}
-          showHeatmap={filters.showHeatmap}
-          emphasizeEnergy={filters.emphasizeEnergyLayer}
-          onSelectStation={(id) => {
-            closeMobileSheet();
-            filters.setSelectedStationId(id);
-          }}
-        />
-      </main>
+      <SuperchargerMap
+        stations={filtered}
+        selectedStationId={filters.selectedStationId}
+        showHeatmap={filters.showHeatmap}
+        emphasizeEnergy={filters.emphasizeEnergyLayer}
+        onSelectStation={(id) => {
+          closeMobileSheet();
+          filters.setSelectedStationId(id);
+        }}
+      />
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announceText}
@@ -76,35 +70,24 @@ export function AppShell() {
         onRefresh={refresh}
       />
 
-      {/* Desktop sidebar */}
       <aside
-        className="pointer-events-none absolute bottom-4 left-4 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(340px,calc(100vw-2rem))] flex-col gap-3 lg:flex"
+        className="pointer-events-none absolute bottom-3 left-3 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:w-[min(340px,calc(100vw-2rem))]"
         aria-label="Filters and insights"
       >
         <div className="pointer-events-auto">
           <FilterPanel regionsInData={regionsInData} />
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto hidden lg:block">
           <SummaryCards stations={filtered} />
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto hidden md:block">
           <WatchlistPanel stations={stations} />
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto hidden xl:block">
           <TimelinePlayer stationId={filters.selectedStationId} />
         </div>
-        <div className="pointer-events-auto">
+        <div className="pointer-events-auto hidden lg:block">
           <AboutPanel />
-        </div>
-      </aside>
-
-      {/* Tablet: filters only */}
-      <aside
-        className="pointer-events-none absolute bottom-4 left-4 top-[calc(5.5rem+var(--safe-top))] z-20 hidden w-[min(320px,40vw)] md:block lg:hidden"
-        aria-label="Filters"
-      >
-        <div className="pointer-events-auto">
-          <FilterPanel regionsInData={regionsInData} />
         </div>
       </aside>
 

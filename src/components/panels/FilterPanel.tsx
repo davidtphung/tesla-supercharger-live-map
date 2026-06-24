@@ -51,7 +51,7 @@ export function FilterPanel({
       className={
         embedded
           ? "space-y-5"
-          : "glass scroll-thin max-h-[min(72dvh,640px)] space-y-5 overflow-y-auto rounded-xl p-4 md:max-h-[calc(100dvh-10rem)]"
+          : "glass scroll-thin max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto rounded-xl p-4"
       }
       role="search"
       aria-label="Station filters"
