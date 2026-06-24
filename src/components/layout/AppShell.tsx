@@ -9,11 +9,13 @@ import { SummaryCards } from "@/components/panels/SummaryCards";
 import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
 import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 import { AboutPanel } from "@/components/panels/AboutPanel";
+import { EnergyFlowPanel } from "@/components/panels/EnergyFlowPanel";
 import { LiveStatsBar } from "@/components/panels/LiveStatsBar";
 import { StationDetailDrawer } from "@/components/panels/StationDetailDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { filterStations } from "@/lib/filter-stations";
 import { useStations } from "@/lib/hooks/useStations";
+import { aggregateEnergyFlow } from "@/lib/scoring/energy-flow";
 import { aggregateNetworkStats } from "@/lib/scoring/power";
 import { useFilterStore } from "@/store/filters";
 import { useUiStore } from "@/store/ui";
@@ -44,6 +46,11 @@ export function AppShell() {
 
   const liveStats = useMemo(
     () => aggregateNetworkStats(filtered),
+    [filtered]
+  );
+
+  const liveEnergy = useMemo(
+    () => aggregateEnergyFlow(filtered.filter((s) => s.station_status === "OPEN")),
     [filtered]
   );
 
@@ -79,11 +86,18 @@ export function AppShell() {
       />
 
       <aside
-        className="pointer-events-none absolute bottom-3 left-3 top-[calc(13.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:top-[calc(14rem+var(--safe-top))] lg:w-[min(340px,calc(100vw-2rem))]"
+        className="pointer-events-none absolute bottom-3 left-3 top-[calc(15.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:top-[calc(16rem+var(--safe-top))] lg:w-[min(340px,calc(100vw-2rem))]"
         aria-label="Filters and insights"
       >
         <div className="pointer-events-auto">
           <FilterPanel regionsInData={regionsInData} />
+        </div>
+        <div className="pointer-events-auto hidden xl:block">
+          <EnergyFlowPanel
+            title="Network energy flow"
+            hours={24}
+            liveFlow={liveEnergy}
+          />
         </div>
         <div className="pointer-events-auto hidden lg:block">
           <SummaryCards stations={filtered} />
@@ -115,6 +129,7 @@ export function AppShell() {
       >
         <div className="space-y-4">
           <LiveStatsBar stats={liveStats} embedded />
+          <EnergyFlowPanel title="Network energy flow" hours={24} />
           <SummaryCards stations={filtered} />
           <TimelinePlayer stationId={filters.selectedStationId} />
         </div>

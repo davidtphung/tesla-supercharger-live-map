@@ -1,6 +1,6 @@
 "use client";
 
-import { BatteryCharging, CircleCheck, PlugZap, Users } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, CircleCheck, PlugZap, Users } from "lucide-react";
 import type { NetworkLiveStats } from "@/lib/scoring/power";
 import { formatCount, formatPower } from "@/lib/utils/format";
 
@@ -15,8 +15,8 @@ export function LiveStatsBar({
     <section
       className={
         embedded
-          ? "grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
-          : "grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2"
+          ? "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-3"
+          : "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 sm:gap-2"
       }
       aria-label="Network live charging statistics"
     >
@@ -35,10 +35,17 @@ export function LiveStatsBar({
         color="var(--warning)"
       />
       <StatTile
-        icon={<BatteryCharging className="h-3.5 w-3.5" aria-hidden="true" />}
-        label="Charging"
-        value={formatPower(stats.current_power_kw)}
-        sub="live draw"
+        icon={<ArrowDownLeft className="h-3.5 w-3.5" aria-hidden="true" />}
+        label="Watts in"
+        value={formatPower(stats.power_in_kw)}
+        sub="grid + solar + battery"
+        color="var(--gold)"
+      />
+      <StatTile
+        icon={<ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />}
+        label="Watts out"
+        value={formatPower(stats.power_out_kw)}
+        sub="to vehicles"
         color="var(--accent-cyan)"
       />
       <StatTile

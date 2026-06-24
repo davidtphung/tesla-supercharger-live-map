@@ -52,6 +52,11 @@ export interface StationRecord {
   reliability_score: number;
   congestion_score: number;
   current_power_kw: number;
+  power_out_kw: number;
+  power_in_kw: number;
+  solar_in_kw: number;
+  grid_in_kw: number;
+  battery_net_kw: number;
   occupancy_source: OccupancySource;
   notes?: string;
   facility_name?: string;
@@ -67,6 +72,11 @@ export interface StationSnapshot {
   stall_down: number;
   occupancy_status: OccupancyStatus;
   congestion_score: number;
+  power_out_kw: number;
+  power_in_kw: number;
+  solar_in_kw: number;
+  grid_in_kw: number;
+  battery_net_kw: number;
 }
 
 export interface NetworkStatsMeta {
@@ -75,6 +85,8 @@ export interface NetworkStatsMeta {
   stall_total: number;
   stall_down: number;
   current_power_kw: number;
+  power_in_kw: number;
+  power_out_kw: number;
   utilization_pct: number;
 }
 

@@ -1,3 +1,4 @@
+import { aggregateEnergyFlow } from "@/lib/scoring/energy-flow";
 import type { StationRecord } from "@/lib/schema/station";
 
 /** Estimated aggregate draw from occupied stalls (avg ~72% of per-stall rating). */
@@ -17,6 +18,8 @@ export interface NetworkLiveStats {
   stall_total: number;
   stall_down: number;
   current_power_kw: number;
+  power_in_kw: number;
+  power_out_kw: number;
   open_stations: number;
   utilization_pct: number;
 }
@@ -29,6 +32,7 @@ export function aggregateNetworkStats(stations: StationRecord[]): NetworkLiveSta
   const stall_total = open.reduce((sum, s) => sum + s.stall_total, 0);
   const stall_down = open.reduce((sum, s) => sum + s.stall_down, 0);
   const current_power_kw = open.reduce((sum, s) => sum + s.current_power_kw, 0);
+  const energy = aggregateEnergyFlow(open);
   const operational = Math.max(stall_total - stall_down, 1);
 
   return {
@@ -37,6 +41,8 @@ export function aggregateNetworkStats(stations: StationRecord[]): NetworkLiveSta
     stall_total,
     stall_down,
     current_power_kw,
+    power_in_kw: energy.power_in_kw,
+    power_out_kw: energy.power_out_kw,
     open_stations: open.length,
     utilization_pct: Math.round((stall_occupied / operational) * 100),
   };

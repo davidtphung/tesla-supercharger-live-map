@@ -528,6 +528,11 @@ body {
   animation: pulse-live 2s ease-in-out infinite;
 }
 
+.live-pulse {
+  animation: pulse-live 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
 @keyframes pulse-live {
   0%,
   100% {

@@ -7,6 +7,7 @@ import {
   EnergyChip,
   OccupancyChip,
 } from "@/components/ui/StatusChip";
+import { EnergyFlowPanel } from "@/components/panels/EnergyFlowPanel";
 import { formatCount, formatPower, formatRelativeTime, formatTimestamp } from "@/lib/utils/format";
 
 export function StationDetailContent({ station }: { station: StationRecord }) {
@@ -19,27 +20,56 @@ export function StationDetailContent({ station }: { station: StationRecord }) {
         {[station.city, station.state, station.country].filter(Boolean).join(", ")}
       </p>
 
-      <div
-        className="mb-4 rounded-xl p-4"
-        style={{
-          background: "color-mix(in srgb, var(--accent-cyan) 12%, transparent)",
-          border: "1px solid var(--border)",
-        }}
-        role="status"
-        aria-label={`${formatPower(station.current_power_kw)} charging across ${station.stall_occupied} occupied stalls`}
-      >
-        <div className="section-label mb-1" style={{ color: "var(--accent-cyan)" }}>
-          Charging now
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <div
+          className="rounded-xl p-3"
+          style={{
+            background: "color-mix(in srgb, var(--gold) 12%, transparent)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div className="section-label mb-1" style={{ color: "var(--gold)" }}>
+            Watts in
+          </div>
+          <div className="font-mono text-xl font-bold tabular-nums" style={{ color: "var(--gold)" }}>
+            {formatPower(station.power_in_kw)}
+          </div>
+          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            Grid {formatPower(station.grid_in_kw)} · Solar {formatPower(station.solar_in_kw)}
+          </p>
         </div>
         <div
-          className="font-mono text-2xl font-bold tabular-nums"
-          style={{ color: "var(--accent-cyan)" }}
+          className="rounded-xl p-3"
+          style={{
+            background: "color-mix(in srgb, var(--accent-cyan) 12%, transparent)",
+            border: "1px solid var(--border)",
+          }}
         >
-          {formatPower(station.current_power_kw)}
+          <div className="section-label mb-1" style={{ color: "var(--accent-cyan)" }}>
+            Watts out
+          </div>
+          <div className="font-mono text-xl font-bold tabular-nums" style={{ color: "var(--accent-cyan)" }}>
+            {formatPower(station.power_out_kw)}
+          </div>
+          <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+            {formatCount(station.stall_occupied)} stalls · {utilization}% use
+          </p>
         </div>
-        <p className="mt-1 text-[12px]" style={{ color: "var(--text-muted)" }}>
-          {formatCount(station.stall_occupied)} stalls in use · {utilization}% utilization
-        </p>
+      </div>
+
+      <div className="mb-4">
+        <EnergyFlowPanel
+          stationId={station.station_id}
+          liveFlow={{
+            power_in_kw: station.power_in_kw,
+            power_out_kw: station.power_out_kw,
+            solar_in_kw: station.solar_in_kw,
+            grid_in_kw: station.grid_in_kw,
+            battery_net_kw: station.battery_net_kw,
+          }}
+          title="Energy history"
+          hours={24}
+        />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2" role="list" aria-label="Station status">
