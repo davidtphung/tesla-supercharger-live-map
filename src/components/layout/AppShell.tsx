@@ -8,6 +8,7 @@ import { FilterPanel } from "@/components/panels/FilterPanel";
 import { SummaryCards } from "@/components/panels/SummaryCards";
 import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
 import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
+import { AboutPanel } from "@/components/panels/AboutPanel";
 import { StationDetailDrawer } from "@/components/panels/StationDetailDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { filterStations } from "@/lib/filter-stations";
@@ -92,6 +93,9 @@ export function AppShell() {
         <div className="pointer-events-auto">
           <TimelinePlayer stationId={filters.selectedStationId} />
         </div>
+        <div className="pointer-events-auto">
+          <AboutPanel />
+        </div>
       </aside>
 
       {/* Tablet: filters only */}
@@ -132,6 +136,14 @@ export function AppShell() {
         <WatchlistPanel stations={stations} embedded />
       </BottomSheet>
 
+      <BottomSheet
+        open={mobileSheet === "about"}
+        title="About"
+        onClose={closeMobileSheet}
+      >
+        <AboutPanel embedded />
+      </BottomSheet>
+
       <StationDetailDrawer
         station={selectedStation}
         onClose={() => filters.setSelectedStationId(null)}
@@ -169,7 +181,16 @@ export function AppShell() {
         >
           supercharge.info
         </a>
-        . Occupancy is modeled unless Tesla Fleet API is configured.
+        . Occupancy is modeled unless Tesla Fleet API is configured. · Built by{" "}
+        <a
+          className="pointer-events-auto underline underline-offset-2"
+          href="https://x.com/davidtphung"
+          target="_blank"
+          rel="noopener noreferrer me"
+          style={{ color: "var(--accent)" }}
+        >
+          David T Phung
+        </a>
       </footer>
     </div>
   );

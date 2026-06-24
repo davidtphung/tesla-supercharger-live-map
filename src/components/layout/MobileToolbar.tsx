@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Bookmark, Map, SlidersHorizontal } from "lucide-react";
+import { BarChart3, Bookmark, Info, Map, SlidersHorizontal } from "lucide-react";
 import { useUiStore, type MobileSheet } from "@/store/ui";
 
 const ITEMS: Array<{
@@ -11,6 +11,7 @@ const ITEMS: Array<{
   { id: "filters", label: "Filters", icon: SlidersHorizontal },
   { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "watchlist", label: "Saved", icon: Bookmark },
+  { id: "about", label: "About", icon: Info },
 ];
 
 export function MobileToolbar({

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type MobileSheet = "none" | "filters" | "insights" | "watchlist";
+export type MobileSheet = "none" | "filters" | "insights" | "watchlist" | "about";
 
 interface UiState {
   mobileSheet: MobileSheet;
