@@ -1,3 +1,10 @@
+import {
+  getNetworkEnergySnapshots,
+  getStationEnergySnapshots,
+  mergeEnergyHistory,
+  recordNetworkEnergySnapshot,
+  recordStationEnergySnapshot,
+} from "@/lib/cache/energy-snapshots";
 import { cacheGet, cacheSet } from "@/lib/cache/memory-cache";
 import { superchargeInfoAdapter } from "@/lib/providers/adapters/supercharge-info";
 import {
@@ -21,7 +28,11 @@ import {
   computeReliabilityScore,
   deriveOccupancyStatus,
 } from "@/lib/scoring/congestion";
-import { aggregateEnergyFlow, estimateEnergyFlow } from "@/lib/scoring/energy-flow";
+import {
+  aggregateEnergyFlow,
+  buildNetworkEnergyTimeline,
+  estimateEnergyFlow,
+} from "@/lib/scoring/energy-flow";
 import {
   aggregateNetworkStats,
   estimateCurrentPowerKw,
@@ -98,23 +109,57 @@ function finalizeStation(partial: Partial<StationRecord>): StationRecord {
     ),
   };
 
-  const current_power_kw =
-    partial.current_power_kw ?? estimateCurrentPowerKw(withScores);
-  const energy =
-    partial.power_in_kw !== undefined
-      ? {
-          power_out_kw: partial.power_out_kw ?? 0,
-          power_in_kw: partial.power_in_kw ?? 0,
-          solar_in_kw: partial.solar_in_kw ?? 0,
-          grid_in_kw: partial.grid_in_kw ?? 0,
-          battery_net_kw: partial.battery_net_kw ?? 0,
-        }
-      : estimateEnergyFlow(withScores, partial.last_updated);
+  const current_power_kw = estimateCurrentPowerKw(withScores);
+  const energy = estimateEnergyFlow(withScores, partial.last_updated);
 
   return {
     ...withScores,
     current_power_kw,
     ...energy,
+  };
+}
+
+function applyLiveOccupancy(stations: StationRecord[]): StationRecord[] {
+  const patches = modelOccupancyForStations(stations, 1);
+  return applyOccupancyPatches(stations, patches).map((s) => finalizeStation(s));
+}
+
+function recordEnergySnapshots(stations: StationRecord[]) {
+  const ts = new Date().toISOString();
+  const network = aggregateEnergyFlow(stations);
+  recordNetworkEnergySnapshot({ timestamp: ts, ...network });
+
+  for (const station of stations.slice(0, 300)) {
+    recordStationEnergySnapshot(station.station_id, {
+      timestamp: ts,
+      power_out_kw: station.power_out_kw,
+      power_in_kw: station.power_in_kw,
+      solar_in_kw: station.solar_in_kw,
+      grid_in_kw: station.grid_in_kw,
+      battery_net_kw: station.battery_net_kw,
+    });
+  }
+}
+
+function withLiveMeta(stations: StationRecord[], meta: StationsPayload["meta"]) {
+  const network = aggregateNetworkStats(stations);
+  const energy = aggregateEnergyFlow(stations);
+  return {
+    stations,
+    meta: {
+      ...meta,
+      fetched_at: new Date().toISOString(),
+      network_stats: {
+        stall_available: network.stall_available,
+        stall_occupied: network.stall_occupied,
+        stall_total: network.stall_total,
+        stall_down: network.stall_down,
+        current_power_kw: network.current_power_kw,
+        power_in_kw: energy.power_in_kw,
+        power_out_kw: energy.power_out_kw,
+        utilization_pct: network.utilization_pct,
+      },
+    },
   };
 }
 
@@ -139,7 +184,11 @@ export class CompositeStationProvider implements StationDataProvider {
   async fetchStations(options?: import("@/lib/providers/types").FetchOptions) {
     if (!options?.force) {
       const cached = cacheGet<StationsPayload>(STATIONS_CACHE_KEY);
-      if (cached) return cached;
+      if (cached) {
+        const live = withLiveMeta(applyLiveOccupancy(cached.stations), cached.meta);
+        recordEnergySnapshots(live.stations);
+        return live;
+      }
     }
 
     const { records, meta: metadataMeta } =
@@ -164,7 +213,7 @@ export class CompositeStationProvider implements StationDataProvider {
     }
 
     if (allPatches.length === 0 && this.fallbackModeled) {
-      allPatches.push(...modelOccupancyForStations(stations));
+      allPatches.push(...modelOccupancyForStations(stations, 1));
       occupancyConfidence = "low";
       occupancySource = "modeled-occupancy";
     }
@@ -180,6 +229,7 @@ export class CompositeStationProvider implements StationDataProvider {
     );
 
     this.recordTimelineSnapshots(stations);
+    recordEnergySnapshots(stations);
 
     const network = aggregateNetworkStats(stations);
     const energy = aggregateEnergyFlow(stations);
@@ -214,6 +264,40 @@ export class CompositeStationProvider implements StationDataProvider {
   ) {
     const { stations } = await this.fetchStations(options);
     return stations.find((s) => s.station_id === id) ?? null;
+  }
+
+  async fetchNetworkEnergyTimeline(hours = 24) {
+    const { stations } = await this.fetchStations();
+    const recorded = getNetworkEnergySnapshots();
+    const modeled = buildNetworkEnergyTimeline(stations, hours);
+    const snapshots = mergeEnergyHistory(recorded, modeled);
+    const current = aggregateEnergyFlow(
+      stations.filter((s) => s.station_status === "OPEN")
+    );
+    return {
+      snapshots: snapshots.slice(-hours * 4),
+      current: { timestamp: new Date().toISOString(), ...current },
+    };
+  }
+
+  async fetchStationEnergyTimeline(stationId: string, hours = 24) {
+    const station = await this.fetchStation(stationId);
+    if (!station) return { snapshots: [], current: null };
+
+    const recorded = getStationEnergySnapshots(stationId);
+    const modeled = buildNetworkEnergyTimeline([station], hours);
+    const snapshots = mergeEnergyHistory(recorded, modeled);
+    return {
+      snapshots: snapshots.slice(-hours * 4),
+      current: {
+        timestamp: new Date().toISOString(),
+        power_out_kw: station.power_out_kw,
+        power_in_kw: station.power_in_kw,
+        solar_in_kw: station.solar_in_kw,
+        grid_in_kw: station.grid_in_kw,
+        battery_net_kw: station.battery_net_kw,
+      },
+    };
   }
 
   async fetchTimeline(stationId: string, hours = 24): Promise<StationSnapshot[]> {

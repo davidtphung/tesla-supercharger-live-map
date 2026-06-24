@@ -11,7 +11,9 @@ export function useStations(refreshIntervalMs = 60_000) {
   const fetchStations = useCallback(async (force = false) => {
     try {
       setError(null);
-      const res = await fetch(`/api/stations${force ? "?force=1" : ""}`);
+      const res = await fetch(`/api/stations${force ? "?force=1" : ""}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`Failed to load stations (${res.status})`);
       const payload = (await res.json()) as StationsPayload;
       setData(payload);

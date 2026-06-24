@@ -45,7 +45,7 @@ export function DataPanel({
       <div>
         <h2 className="section-label">Live network</h2>
         <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
-          Stall availability, watts in/out, and charging draw — refreshed every 30 seconds.
+          Stall availability, watts in/out, and charging draw — refreshed every 15 seconds.
         </p>
       </div>
 

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { stationProvider } from "@/lib/providers/composite";
-import { buildNetworkEnergyTimeline } from "@/lib/scoring/energy-flow";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +8,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const hours = Math.min(72, Math.max(1, Number(searchParams.get("hours") ?? 24)));
 
-    const { stations } = await stationProvider.fetchStations();
-    const snapshots = buildNetworkEnergyTimeline(stations, hours);
+    const { snapshots, current } = await stationProvider.fetchNetworkEnergyTimeline(hours);
 
     return NextResponse.json({
       scope: "network",
       hours,
       snapshots,
+      current,
     });
   } catch (error) {
     return NextResponse.json(

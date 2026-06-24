@@ -21,7 +21,7 @@ function seededRandom(seed: string): () => number {
   };
 }
 
-function timeBucket(minutes = 15): string {
+export function timeBucket(minutes = 15): string {
   const d = new Date();
   const bucket =
     Math.floor(d.getTime() / (minutes * 60 * 1000)) * minutes * 60 * 1000;
@@ -185,7 +185,10 @@ export function applyOccupancyPatches(
   });
 }
 
-export function modelOccupancyForStations(stations: StationRecord[]): OccupancyPatch[] {
-  const bucket = timeBucket();
+export function modelOccupancyForStations(
+  stations: StationRecord[],
+  bucketMinutes = 15
+): OccupancyPatch[] {
+  const bucket = timeBucket(bucketMinutes);
   return stations.map((s) => modelOccupancy(s, bucket));
 }

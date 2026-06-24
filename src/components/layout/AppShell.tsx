@@ -19,7 +19,7 @@ import { useFilterStore } from "@/store/filters";
 import { useUiStore } from "@/store/ui";
 
 export function AppShell() {
-  const { data, loading, error, refresh } = useStations(30_000);
+  const { data, loading, error, refresh } = useStations(15_000);
   const filters = useFilterStore();
   const { mobileSheet, closeMobileSheet, panelTab, setPanelTab } = useUiStore();
 

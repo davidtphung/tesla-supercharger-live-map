@@ -19,13 +19,18 @@ export function EnergyFlowPanel({
   title?: string;
   hours?: number;
 }) {
-  const { snapshots, loading, error } = useEnergyTimeline({ stationId, hours });
+  const { snapshots, loading, error } = useEnergyTimeline({
+    stationId,
+    hours,
+    pollMs: 15_000,
+    liveFlow,
+  });
   const [index, setIndex] = useState(-1);
   const reducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     setIndex(snapshots.length > 0 ? snapshots.length - 1 : -1);
-  }, [snapshots.length, stationId]);
+  }, [snapshots.length, stationId, liveFlow?.power_in_kw, liveFlow?.power_out_kw]);
 
   useEffect(() => {
     if (reducedMotion || snapshots.length < 2) return;
