@@ -9,7 +9,7 @@ const ITEMS: Array<{
   icon: typeof Map;
 }> = [
   { id: "filters", label: "Filters", icon: SlidersHorizontal },
-  { id: "insights", label: "Insights", icon: BarChart3 },
+  { id: "data", label: "Data", icon: BarChart3 },
   { id: "watchlist", label: "Saved", icon: Bookmark },
   { id: "about", label: "About", icon: Info },
 ];

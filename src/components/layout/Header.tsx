@@ -1,5 +1,6 @@
 import { Zap } from "lucide-react";
 import { LiveStatsBar } from "@/components/panels/LiveStatsBar";
+import { PanelTabs, type PanelTab } from "@/components/ui/PanelTabs";
 import { RefreshIndicator } from "@/components/ui/RefreshIndicator";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { DataConfidence } from "@/lib/schema/station";
@@ -12,6 +13,8 @@ export function Header({
   confidence,
   stationCount,
   liveStats,
+  panelTab,
+  onPanelTabChange,
   onRefresh,
 }: {
   loading: boolean;
@@ -20,6 +23,8 @@ export function Header({
   confidence?: DataConfidence;
   stationCount: number;
   liveStats: NetworkLiveStats;
+  panelTab: PanelTab;
+  onPanelTabChange: (tab: PanelTab) => void;
   onRefresh: () => void;
 }) {
   return (
@@ -63,6 +68,9 @@ export function Header({
         </div>
 
         <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-2">
+          <div className="hidden lg:block">
+            <PanelTabs active={panelTab} onChange={onPanelTabChange} />
+          </div>
           <div className="flex items-center gap-2">
             <div className="hidden md:block">
               <ThemeToggle />

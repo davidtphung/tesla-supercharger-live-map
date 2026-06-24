@@ -4,15 +4,13 @@ import { useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { MobileToolbar } from "@/components/layout/MobileToolbar";
 import { SuperchargerMap } from "@/components/map/SuperchargerMap";
-import { FilterPanel } from "@/components/panels/FilterPanel";
-import { SummaryCards } from "@/components/panels/SummaryCards";
-import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
-import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 import { AboutPanel } from "@/components/panels/AboutPanel";
-import { EnergyFlowPanel } from "@/components/panels/EnergyFlowPanel";
-import { LiveStatsBar } from "@/components/panels/LiveStatsBar";
+import { DataPanel } from "@/components/panels/DataPanel";
+import { FilterPanel } from "@/components/panels/FilterPanel";
+import { WatchlistPanel } from "@/components/panels/WatchlistPanel";
 import { StationDetailDrawer } from "@/components/panels/StationDetailDrawer";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { PanelTabs } from "@/components/ui/PanelTabs";
 import { filterStations } from "@/lib/filter-stations";
 import { useStations } from "@/lib/hooks/useStations";
 import { aggregateEnergyFlow } from "@/lib/scoring/energy-flow";
@@ -23,7 +21,7 @@ import { useUiStore } from "@/store/ui";
 export function AppShell() {
   const { data, loading, error, refresh } = useStations(30_000);
   const filters = useFilterStore();
-  const { mobileSheet, closeMobileSheet } = useUiStore();
+  const { mobileSheet, closeMobileSheet, panelTab, setPanelTab } = useUiStore();
 
   const stations = useMemo(() => data?.stations ?? [], [data?.stations]);
   const filtered = useMemo(
@@ -82,38 +80,52 @@ export function AppShell() {
         confidence={data?.meta.confidence}
         stationCount={filtered.length}
         liveStats={liveStats}
+        panelTab={panelTab}
+        onPanelTabChange={setPanelTab}
         onRefresh={refresh}
       />
 
       <aside
         className="pointer-events-none absolute bottom-3 left-3 top-[calc(15.5rem+var(--safe-top))] z-20 hidden w-[min(320px,calc(100vw-1.5rem))] flex-col gap-2 md:bottom-4 md:left-4 md:flex md:gap-3 lg:top-[calc(16rem+var(--safe-top))] lg:w-[min(340px,calc(100vw-2rem))]"
-        aria-label="Filters and insights"
+        aria-label="Map controls"
       >
         <div className="pointer-events-auto">
           <FilterPanel regionsInData={regionsInData} />
         </div>
-        <div className="pointer-events-auto hidden xl:block">
-          <EnergyFlowPanel
-            title="Network energy flow"
-            hours={24}
-            liveFlow={liveEnergy}
-          />
+        <div className="pointer-events-auto hidden lg:block">
+          <PanelTabs active={panelTab} onChange={setPanelTab} />
         </div>
         <div className="pointer-events-auto hidden lg:block">
-          <SummaryCards stations={filtered} />
+          {panelTab === "data" ? (
+            <DataPanel
+              stations={filtered}
+              liveStats={liveStats}
+              liveEnergy={liveEnergy}
+              selectedStationId={filters.selectedStationId}
+              fetchedAt={data?.meta.fetched_at}
+              source={data?.meta.source}
+              confidence={data?.meta.confidence}
+            />
+          ) : (
+            <AboutPanel />
+          )}
+        </div>
+        <div className="pointer-events-auto hidden md:block lg:hidden">
+          <DataPanel
+            stations={filtered}
+            liveStats={liveStats}
+            liveEnergy={liveEnergy}
+            selectedStationId={filters.selectedStationId}
+            fetchedAt={data?.meta.fetched_at}
+            source={data?.meta.source}
+            confidence={data?.meta.confidence}
+          />
         </div>
         <div className="pointer-events-auto hidden md:block">
           <WatchlistPanel stations={stations} />
         </div>
-        <div className="pointer-events-auto hidden xl:block">
-          <TimelinePlayer stationId={filters.selectedStationId} />
-        </div>
-        <div className="pointer-events-auto hidden lg:block">
-          <AboutPanel />
-        </div>
       </aside>
 
-      {/* Mobile sheets */}
       <BottomSheet
         open={mobileSheet === "filters"}
         title="Filters"
@@ -123,16 +135,20 @@ export function AppShell() {
       </BottomSheet>
 
       <BottomSheet
-        open={mobileSheet === "insights"}
-        title="Insights"
+        open={mobileSheet === "data"}
+        title="Data"
         onClose={closeMobileSheet}
       >
-        <div className="space-y-4">
-          <LiveStatsBar stats={liveStats} embedded />
-          <EnergyFlowPanel title="Network energy flow" hours={24} />
-          <SummaryCards stations={filtered} />
-          <TimelinePlayer stationId={filters.selectedStationId} />
-        </div>
+        <DataPanel
+          stations={filtered}
+          liveStats={liveStats}
+          liveEnergy={liveEnergy}
+          selectedStationId={filters.selectedStationId}
+          fetchedAt={data?.meta.fetched_at}
+          source={data?.meta.source}
+          confidence={data?.meta.confidence}
+          embedded
+        />
       </BottomSheet>
 
       <BottomSheet
