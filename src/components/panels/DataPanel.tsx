@@ -7,10 +7,12 @@ import { formatRelativeTime } from "@/lib/utils/format";
 import { EnergyFlowPanel } from "@/components/panels/EnergyFlowPanel";
 import { LiveStatsBar } from "@/components/panels/LiveStatsBar";
 import { SummaryCards } from "@/components/panels/SummaryCards";
+import { SuperchargeChartsPanel } from "@/components/panels/SuperchargeChartsPanel";
 import { TimelinePlayer } from "@/components/panels/TimelinePlayer";
 
 export function DataPanel({
   stations,
+  networkStations,
   liveStats,
   liveEnergy,
   selectedStationId,
@@ -20,6 +22,7 @@ export function DataPanel({
   embedded = false,
 }: {
   stations: StationRecord[];
+  networkStations?: StationRecord[];
   liveStats: NetworkLiveStats;
   liveEnergy?: EnergyFlow;
   selectedStationId: string | null;
@@ -45,6 +48,8 @@ export function DataPanel({
           Stall availability, watts in/out, and charging draw — refreshed every 30 seconds.
         </p>
       </div>
+
+      <SuperchargeChartsPanel stations={networkStations ?? stations} embedded />
 
       <LiveStatsBar stats={liveStats} embedded />
 

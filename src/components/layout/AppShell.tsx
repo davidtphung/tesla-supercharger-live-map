@@ -99,6 +99,7 @@ export function AppShell() {
           {panelTab === "data" ? (
             <DataPanel
               stations={filtered}
+              networkStations={stations}
               liveStats={liveStats}
               liveEnergy={liveEnergy}
               selectedStationId={filters.selectedStationId}
@@ -113,6 +114,7 @@ export function AppShell() {
         <div className="pointer-events-auto hidden md:block lg:hidden">
           <DataPanel
             stations={filtered}
+            networkStations={stations}
             liveStats={liveStats}
             liveEnergy={liveEnergy}
             selectedStationId={filters.selectedStationId}
@@ -141,6 +143,7 @@ export function AppShell() {
       >
         <DataPanel
           stations={filtered}
+          networkStations={stations}
           liveStats={liveStats}
           liveEnergy={liveEnergy}
           selectedStationId={filters.selectedStationId}
