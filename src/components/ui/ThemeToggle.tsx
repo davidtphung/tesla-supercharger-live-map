@@ -1,21 +1,19 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useThemeStore, type ThemeMode } from "@/store/theme";
 
 const MODES: Array<{ id: ThemeMode; label: string; icon: typeof Sun }> = [
   { id: "light", label: "Light", icon: Sun },
   { id: "dark", label: "Dark", icon: Moon },
-  { id: "system", label: "System", icon: Monitor },
 ];
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { mode, setMode } = useThemeStore();
 
   if (compact) {
-    const next =
-      mode === "dark" ? "light" : mode === "light" ? "system" : "dark";
-    const Icon = mode === "light" ? Sun : mode === "system" ? Monitor : Moon;
+    const next: ThemeMode = mode === "dark" ? "light" : "dark";
+    const Icon = mode === "light" ? Sun : Moon;
     return (
       <button
         type="button"

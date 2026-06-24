@@ -52,13 +52,9 @@ const themeInitScript = `
       var parsed = JSON.parse(stored);
       mode = parsed.state && parsed.state.mode ? parsed.state.mode : 'dark';
     }
-    var resolved = mode;
+    var resolved = mode === 'light' ? 'light' : 'dark';
     if (mode === 'system') {
       resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else if (mode === 'light') {
-      resolved = 'light';
-    } else {
-      resolved = 'dark';
     }
     document.documentElement.dataset.theme = resolved;
     var meta = document.querySelector('meta[name="theme-color"]');

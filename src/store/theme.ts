@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ThemeMode = "dark" | "light" | "system";
+export type ThemeMode = "dark" | "light";
 
 interface ThemeState {
   mode: ThemeMode;
@@ -9,13 +9,14 @@ interface ThemeState {
   setMode: (mode: ThemeMode) => void;
 }
 
-function resolveTheme(mode: ThemeMode): "dark" | "light" {
+function normalizeMode(mode: unknown): ThemeMode {
+  if (mode === "light") return "light";
   if (mode === "system" && typeof window !== "undefined") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
   }
-  return mode === "light" ? "light" : "dark";
+  return "dark";
 }
 
 function applyTheme(resolved: "dark" | "light") {
@@ -33,18 +34,18 @@ export const useThemeStore = create<ThemeState>()(
       mode: "dark",
       resolved: "dark",
       setMode: (mode) => {
-        const resolved = resolveTheme(mode);
-        applyTheme(resolved);
-        set({ mode, resolved });
+        applyTheme(mode);
+        set({ mode, resolved: mode });
       },
     }),
     {
       name: "tesla-sc-theme",
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        const resolved = resolveTheme(state.mode);
-        applyTheme(resolved);
-        state.resolved = resolved;
+        const mode = normalizeMode(state.mode);
+        applyTheme(mode);
+        state.mode = mode;
+        state.resolved = mode;
       },
     }
   )
@@ -52,13 +53,7 @@ export const useThemeStore = create<ThemeState>()(
 
 export function initThemeListeners() {
   if (typeof window === "undefined") return;
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  const onChange = () => {
-    const { mode, setMode } = useThemeStore.getState();
-    if (mode === "system") setMode("system");
-  };
-  mq.addEventListener("change", onChange);
-  const resolved = resolveTheme(useThemeStore.getState().mode);
-  applyTheme(resolved);
-  useThemeStore.setState({ resolved });
+  const mode = normalizeMode(useThemeStore.getState().mode);
+  applyTheme(mode);
+  useThemeStore.setState({ mode, resolved: mode });
 }
