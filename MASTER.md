@@ -342,4 +342,4 @@ This file (`MASTER.md`) is the single source of truth for project state as of th
 - Data source integrations change
 
 **Last updated:** June 24, 2026  
-**Last deployed commit:** `a50932d` (8dbdbd6)
+**Last deployed commit:** `07c9e89`
